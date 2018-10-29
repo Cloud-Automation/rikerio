@@ -65,6 +65,16 @@ int rio_plist(rio_profile_t**);
  */
 int rio_malloc(char*, pid_t, uint32_t, void**, uint32_t*);
 
+
+/**
+ * @brief get memory pointer and memory size
+ * @param char* profileId
+ * @param void** memory pointer
+ * @param uint32_t* memory size
+ * @returns 0 on success, -1 on error
+ */
+int rio_mget(char*, void**, uint32_t*);
+
 /**
  * @brief free allocation on a profile with a offset
  * @param char* profileId
