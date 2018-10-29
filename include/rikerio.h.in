@@ -16,7 +16,7 @@ extern "C" {
 #define RIO_SHM_FILE "shm"
 
 struct rio_adr_st;
-struct rio_adr_entry_t;
+struct rio_adr_entry_st;
 struct rio_alloc_entry_st;
 struct rio_alloc_st;
 typedef struct rio_adr_st rio_adr_t;
