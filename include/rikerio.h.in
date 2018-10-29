@@ -160,6 +160,19 @@ int rio_lclear(char*, pid_t);
  */
 int rio_sget(char*, key_t*);
 
+
+/**
+ * @brief lock semaphore
+ * @param int semaphore id
+ */
+int rio_slock(int);
+
+/**
+ * @brief unlock semaphore
+ * @param int semaphore id
+ */
+int rio_sulock(int);
+
 #ifdef __cplusplus
 }
 #endif
