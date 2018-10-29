@@ -1,0 +1,157 @@
+#ifndef __RIKERIO_LIB_H__
+#define __RIKERIO_LIB_H__
+
+#include <stdint.h>
+#include <sys/types.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define RIO_VERSION_MAJOR @VERSION_MAJOR@
+#define RIO_VERSION_MINOR @VERSION_MINOR@
+
+#define RIO_ROOT_PATH "/var/run/rikerio"
+#define RIO_ALLOC_FILE "alloc"
+#define RIO_SHM_FILE "shm"
+
+struct rio_adr_st;
+struct rio_adr_entry_t;
+struct rio_alloc_entry_st;
+struct rio_alloc_st;
+typedef struct rio_adr_st rio_adr_t;
+typedef struct rio_adr_entry_st rio_adr_entry_t;
+typedef struct rio_alloc_entry_st rio_alloc_entry_t;
+typedef struct rio_alloc_st rio_alloc_t;
+
+typedef char rio_key_t[255];
+typedef char rio_profile_t[255];
+
+struct rio_adr_st
+{
+    uint32_t byteOffset;
+    uint8_t bitOffset;
+};
+
+struct rio_adr_entry_st
+{
+    pid_t pid;
+    rio_adr_t adr;
+};
+
+struct rio_alloc_entry_st
+{
+    pid_t pid;
+    uint32_t offset;
+    uint32_t size;
+};
+
+
+/**
+ * @brief get available memory profiles
+ * @param rio_profile_t* return list
+ * @returns number of profiles found, -1 on failure
+ */
+int rio_plist(rio_profile_t**);
+
+/**
+ * @brief allocate new memory of the shared memory from a specific profile
+ * @param char* profileId
+ * @param pid_t pid;
+ * @param uint32_t requested memory size
+ * @param void** pointer
+ * @param uint32_t* offset
+ * @returns 0 on success, -1 on error
+ */
+int rio_malloc(char*, pid_t, uint32_t, void**, uint32_t*);
+
+/**
+ * @brief free allocation on a profile with a offset
+ * @param char* profileId
+ * @param pid_t pid
+ * @param uint32_t offset
+ * @returns 0 on success, -1 on error
+ */
+int rio_mfree(char*, pid_t, uint32_t);
+
+/**
+ * @brief free all allocations from this process
+ * @param char* profileId
+ * @param pid_t pid
+ * @returns 0 on success, -1 on error
+ */
+int rio_mfreeall(char*, pid_t);
+
+/**
+ * @brief List all allocations
+ * @param char* profileId
+ * @param pid_t
+ * @param rio_alloc_entry_t** List of allocations
+ * @returns -1 on error, Number of allocations
+ */
+int rio_mlist(char*, pid_t, rio_alloc_entry_t**);
+
+
+/**
+ * @brief Add new link address
+ * @param char* profileId
+ * @param pid_t pid
+ * @param rio_key_t link key
+ * @param rio_adr_t* adr
+ * @returns 0 on success, -1 on failure
+ */
+int rio_aadd(char*, pid_t, rio_key_t, rio_adr_t*);
+
+
+/**
+ * @brief Get all adr from a link, when pid equals -1 then the result will not depend on the process id.
+ * When pid equals zero then the result will depend on the current process id. Is the pid greater than
+ * zero then the result will depend on the pid provided.
+ * @param char* profileId
+ * @param pid_t pid
+ * @param rio_key_t key
+ * @param address list
+ * @returns number of adresses or -1 on error
+ */
+int rio_aget(char*, pid_t, rio_key_t, rio_adr_t**);
+
+
+/**
+ * @brief get list of links
+ * @param char* profileId
+ * @param pid_t pid
+ * @param rio_key_t** return list of link keys
+ * @return number of link on success, -1 on error
+ */
+int rio_llist(char*, rio_key_t**);
+
+/**
+ * @brief remove all addresses in the link from this process
+ * @param char* profileId
+ * @param pid_t p
+ * @param rio_key_t* link key
+ * @returns -1 on error, 0 on success
+ */
+int rio_ldel(char*, pid_t, rio_key_t);
+
+/**
+ * @brief clear all links/addresses from this process
+ * @param char* profileId
+ * @param pid_t pid
+ * @returns 0 on success, -1 on failure
+ */
+int rio_lclear(char*, pid_t);
+
+/**
+ * @brief get semaphore key.
+ * @param char* profileId
+ * @param key_t* key
+ * @returns -1 on error, 0 on success
+ */
+int rio_sget(char*, key_t*);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
