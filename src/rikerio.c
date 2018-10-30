@@ -338,6 +338,12 @@ exit:
 
 }
 
+int rio_mget(char* id, void**, uint32_t*) {
+
+    return 0;
+
+}
+
 int rio_mfree(char* id, pid_t p, uint32_t offset) {
 
     int retVal = 0;
