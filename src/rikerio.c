@@ -338,7 +338,7 @@ exit:
 
 }
 
-int rio_mget(char* id, void**, uint32_t*) {
+int rio_mget(char* id, void** ptr, uint32_t* size) {
 
     return 0;
 
