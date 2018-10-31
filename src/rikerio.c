@@ -861,9 +861,9 @@ int rio_sget(char* id, key_t* key) {
         return -1;
     }
 
-    int rret = fread(key, sizeof(*key), 1, fp);
+    int rret = fread(key, sizeof(key_t), 1, fp);
 
-    if (rret != sizeof(*key)) {
+    if (rret != sizeof(key_t)) {
         fclose(fp);
         return -1;
     }
