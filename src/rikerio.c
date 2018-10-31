@@ -852,7 +852,7 @@ int rio_sget(char* id, key_t* key) {
 
     char shmKeyFile[255];
 
-    sprintf(shmKeyFile, "%s/%s/sem", RIO_ROOT_PATH, id);
+    sprintf(shmKeyFile, "%s/%s/%s", RIO_ROOT_PATH, id, RIO_SEM_FILE);
 
     /* 2. open and read file */
 

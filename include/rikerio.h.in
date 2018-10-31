@@ -14,6 +14,7 @@ extern "C" {
 #define RIO_ROOT_PATH "/var/run/rikerio"
 #define RIO_ALLOC_FILE "alloc"
 #define RIO_SHM_FILE "shm"
+#define RIO_SEM_FILE "sem"
 
 struct rio_adr_st;
 struct rio_adr_entry_st;
