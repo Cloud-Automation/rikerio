@@ -847,7 +847,6 @@ int rio_lclear(char* id, pid_t p) {
 
 int rio_sget(char* id, key_t* key) {
 
-
     /* 1. get filesize of shm */
 
     char shmKeyFile[255];
@@ -856,7 +855,7 @@ int rio_sget(char* id, key_t* key) {
 
     /* 2. open and read file */
 
-    FILE* fp = fopen(shmKeyFile, "r");
+    FILE* fp = fopen(shmKeyFile, "rb");
 
     if (!fp) {
         return -1;
