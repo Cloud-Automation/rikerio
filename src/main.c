@@ -202,7 +202,7 @@ static void checkAndCreateFolder(char* folder) {
 
 static int checkAndCreateFile(char* file, int closeFile) {
 
-    int fd = open (file, O_RDWR | O_CREAT);
+    int fd = open (file, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
     if (fd == -1) {
         fprintf(stderr, "Error creating file %s (%s).\n", runtime.profile.shm.file, strerror(errno));
@@ -325,7 +325,10 @@ int main(int argc, char** argv) {
     runtime.profile.semaphore.key = runtime.pid;
     runtime.profile.semaphore.id = semget(runtime.profile.semaphore.key, 1, IPC_CREAT | IPC_EXCL | runtime.fileMode);
 
-    write(runtime.profile.semaphore.fd, &runtime.profile.semaphore.key, sizeof(runtime.profile.semaphore.key));
+    if (write(runtime.profile.semaphore.fd, &runtime.profile.semaphore.key, sizeof(runtime.profile.semaphore.key)) < 0) {
+        fprintf(stderr, "Error writing sempahore.\n");
+        tearDown(EXIT_FAILURE);
+    }
 
     close(runtime.profile.semaphore.fd);
 
