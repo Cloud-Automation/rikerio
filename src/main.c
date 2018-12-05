@@ -34,6 +34,8 @@ static struct runtime_st {
 
     char id[20];
     char folder[255];
+    char pFolder[255];
+
     char groupName[20];
 
     gid_t gid;
@@ -43,6 +45,11 @@ static struct runtime_st {
 
     struct {
         char folder[255];
+        char pFolder[255];
+        struct {
+            char folder[255];
+            char link[255];
+        } alias;
         struct {
             int protection;
             int visibility;
@@ -92,10 +99,14 @@ static int parseArguments(int argc, char* argv[]) {
     sprintf(runtime.id, "default");
     sprintf(runtime.groupName, "rikerio");
     sprintf(runtime.folder, "/var/run/rikerio");
+    sprintf(runtime.pFolder, "/var/lib/rikerio");
     sprintf(runtime.profile.folder, "%s/%s", runtime.folder, runtime.id);
+    sprintf(runtime.profile.pFolder, "%s/%s", runtime.pFolder, runtime.id);
+    sprintf(runtime.profile.alias.folder, "%s/%s", runtime.profile.pFolder, "alias");
+    sprintf(runtime.profile.alias.link, "%s/%s", runtime.profile.folder, "alias");
     sprintf(runtime.profile.links.folder, "%s/%s", runtime.profile.folder, "links");
-    sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "/alloc");
-    sprintf(runtime.profile.semaphore.file, "%s/%s", runtime.profile.folder, "/sem");
+    sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "alloc");
+    sprintf(runtime.profile.semaphore.file, "%s/%s", runtime.profile.folder, "sem");
 
     runtime.profile.shm.size = 4096;
     sprintf(runtime.profile.shm.file, "%s/%s", runtime.profile.folder, "/shm");
@@ -112,7 +123,7 @@ static int parseArguments(int argc, char* argv[]) {
             break;
         }
 
-        int v;
+        unsigned int v;
         char* s;
 
         switch (c) {
@@ -137,10 +148,13 @@ static int parseArguments(int argc, char* argv[]) {
             sprintf(runtime.id, "%s", s);
 
             sprintf(runtime.profile.folder, "%s/%s", runtime.folder, runtime.id);
-            sprintf(runtime.profile.shm.file, "%s/%s", runtime.profile.folder, "/shm");
+            sprintf(runtime.profile.pFolder, "%s/%s", runtime.pFolder, runtime.id);
+            sprintf(runtime.profile.alias.folder, "%s/%s", runtime.profile.pFolder, "alias");
+            sprintf(runtime.profile.alias.link, "%s/%s", runtime.profile.folder, "alias");
+            sprintf(runtime.profile.shm.file, "%s/%s", runtime.profile.folder, "shm");
             sprintf(runtime.profile.links.folder, "%s/%s", runtime.profile.folder, "links");
-            sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "/alloc");
-            sprintf(runtime.profile.semaphore.file, "%s/%s", runtime.profile.folder, "/sem");
+            sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "alloc");
+            sprintf(runtime.profile.semaphore.file, "%s/%s", runtime.profile.folder, "sem");
 
             break;
         case 'h':
@@ -200,6 +214,18 @@ static void checkAndCreateFolder(char* folder) {
 
 }
 
+static int checkAndCreateLink(char* link, char* target) {
+
+    DIR* dir = opendir(target);
+
+    if (!dir) {
+        return -1;
+    }
+
+    return symlink(target, link);
+
+}
+
 static int checkAndCreateFile(char* file, int closeFile) {
 
     int fd = open (file, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
@@ -227,6 +253,7 @@ void tearDown(int exitCode) {
     unlink(runtime.profile.shm.file);
     unlink(runtime.profile.semaphore.file);
     unlink(runtime.profile.alloc.file);
+    unlink(runtime.profile.alias.link);
 
     DIR* d = opendir(runtime.profile.links.folder);
     struct dirent* dir = NULL;
@@ -241,6 +268,8 @@ void tearDown(int exitCode) {
     rmdir(runtime.profile.folder);
 
     runtime.running = 0;
+
+    exit(exitCode);
 
 }
 
@@ -266,7 +295,21 @@ int main(int argc, char** argv) {
     checkAndCreateFolder(runtime.profile.links.folder);
     checkAndCreateFile(runtime.profile.alloc.file, 1);
 
+    checkAndCreateFolder(runtime.pFolder);
+    checkAndCreateFolder(runtime.profile.pFolder);
+    checkAndCreateFolder(runtime.profile.alias.folder);
+
     runtime.profile.semaphore.fd = checkAndCreateFile(runtime.profile.semaphore.file, 0);
+
+    if (checkAndCreateLink(runtime.profile.alias.link, runtime.profile.alias.folder) == -1) {
+        fprintf(stderr, "Error creating alias link (%s).\n", strerror(errno));
+        tearDown(EXIT_FAILURE);
+    }
+
+    if (applyGroupAndRights(runtime.profile.alias.link, runtime.dirMode) != 1) {
+        fprintf(stderr, "Error applying rights to alias link (%s).\n", strerror(errno));
+        tearDown(EXIT_FAILURE);
+    }
 
     if (runtime.profile.semaphore.fd == -1) {
         tearDown(EXIT_FAILURE);
@@ -277,7 +320,19 @@ int main(int argc, char** argv) {
         tearDown(EXIT_FAILURE);
     }
 
+    if (applyGroupAndRights(runtime.pFolder, runtime.dirMode) != 1) {
+        tearDown(EXIT_FAILURE);
+    }
+
     if (applyGroupAndRights(runtime.profile.folder, runtime.dirMode) != 1) {
+        tearDown(EXIT_FAILURE);
+    }
+
+    if (applyGroupAndRights(runtime.profile.pFolder, runtime.dirMode) != 1) {
+        tearDown(EXIT_FAILURE);
+    }
+
+    if (applyGroupAndRights(runtime.profile.alias.folder, runtime.dirMode) != 1) {
         tearDown(EXIT_FAILURE);
     }
 

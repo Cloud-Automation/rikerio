@@ -23,14 +23,14 @@ let g:autoformat_autoindent = 0
 let g:autoformat_retab = 0
 let g:autoformat_remove_trailing_spaces = 0
 
-let g:syntastic_cpp_checkers = ['gcc']
+let g:syntastic_c_checkers = ['gcc']
 
 let g:syntastic_always_populate_loc_list = 1
 let g:syntastic_auto_loc_list = 1
 let g:syntastic_check_on_open = 0
 let g:syntastic_check_on_wq = 0
 
-let g:syntastic_c_include_dirs = ['build/debug', 'include']
+let g:syntastic_c_include_dirs = ['build/debug', 'build/debug/include', 'include']
 let g:syntastic_c_check_header = 0
 let g:syntastic_c_compiler_options = '-Wall -Wextra -Werror -Wuninitialized'
 

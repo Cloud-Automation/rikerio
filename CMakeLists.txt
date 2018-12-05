@@ -88,4 +88,20 @@ set_target_properties(rikerio-test PROPERTIES OUTPUT_NAME test)
 target_include_directories(rikerio-test PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 target_link_libraries(rikerio-test systemd rt rikerio-lib)
 
+add_executable(rio-alias-add ${SRC}/add-alias.c)
+set_target_properties(rio-alias-add PROPERTIES OUTPUT_NAME rio-alias-add)
+target_include_directories(rio-alias-add PUBLIC ${INC} ${PROJECT_BINARY_DIR})
+target_link_libraries(rio-alias-add rt rikerio-lib)
+
+add_executable(rio-alias-rm ${SRC}/rm-alias.c)
+set_target_properties(rio-alias-rm PROPERTIES OUTPUT_NAME rio-alias-rm)
+target_include_directories(rio-alias-rm PUBLIC ${INC} ${PROJECT_BINARY_DIR})
+target_link_libraries(rio-alias-rm rt rikerio-lib)
+
+add_executable(rio-alias-ls ${SRC}/list-alias.c)
+set_target_properties(rio-alias-ls PROPERTIES OUTPUT_NAME rio-alias-ls)
+target_include_directories(rio-alias-ls PUBLIC ${INC} ${PROJECT_BINARY_DIR})
+target_link_libraries(rio-alias-ls rt rikerio-lib)
+
+
 
