@@ -82,15 +82,20 @@ static int parseArguments(int argc, char* argv[]) {
 
 }
 
-
-
 int main(int argc, char** argv) {
 
     int retVal = EXIT_SUCCESS;
 
     parseArguments(argc, argv);
 
-    if (rio_alias_count(profile, alias, &adrCount) == -1) {
+    int handle = 0;
+
+    if (rio_lock(profile, &handle) == -1) {
+        fprintf(stderr, "Error locking profile (%s).\n", strerror(errno));
+        goto exit;
+    }
+
+    if (rio_alias_adr_count(profile, alias, &adrCount) == -1) {
         fprintf(stderr, "Error getting adresse count (%s).\n", strerror(errno));
         retVal = EXIT_FAILURE;
         goto exit;
@@ -98,9 +103,14 @@ int main(int argc, char** argv) {
 
     adr = calloc(adrCount, sizeof(rio_adr_t));
 
-    if (rio_alias_get(profile, alias, adr) == -1) {
+    if (rio_alias_adr_get(profile, alias, adr) == -1) {
         fprintf(stderr, "Error getting adresse list (%s).\n", strerror(errno));
         retVal = EXIT_FAILURE;
+        goto exit;
+    }
+
+    if (rio_unlock(handle) == -1) {
+        fprintf(stderr, "Error unlocking profile (%s).\n", strerror(errno));
         goto exit;
     }
 
@@ -109,6 +119,8 @@ int main(int argc, char** argv) {
         printf("%d.%d\n", adr[i].byteOffset, adr[i].bitOffset);
 
     }
+
+
 
 exit:
     free(adr);

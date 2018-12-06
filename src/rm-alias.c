@@ -8,7 +8,7 @@
 
 char profile[255] = "default";
 char alias[255] = "";
-rio_key_t* keys = NULL;
+rio_link_t* keys = NULL;
 unsigned int keyCount = 0;
 
 static struct option long_options[] = {
@@ -80,7 +80,7 @@ static int parseArguments(int argc, char* argv[]) {
 
     unsigned int lIndex = 0;
     for (int index = optind + 1; index < argc; index += 1) {
-        keys = realloc(keys, (lIndex + 1) * sizeof(rio_key_t));
+        keys = realloc(keys, (lIndex + 1) * sizeof(rio_link_t));
         memcpy(&keys[lIndex++], argv[index], strlen(argv[index]));
         keyCount += 1;
     }
@@ -98,13 +98,13 @@ int main(int argc, char** argv) {
     parseArguments(argc, argv);
 
     if (keyCount == 0) {
-        if (rio_alias_rm(profile, alias, NULL) == -1) {
+        if (rio_alias_link_rm(profile, alias, NULL) == -1) {
             return EXIT_FAILURE;
         }
     }
 
     for (unsigned int index = 0; index < keyCount; index += 1) {
-        if (rio_alias_rm(profile, alias, keys[index]) == -1) {
+        if (rio_alias_link_rm(profile, alias, keys[index]) == -1) {
             fprintf(stderr, "Error adding alias (%s).\n", strerror(errno));
             retVal = EXIT_FAILURE;
             goto exit;

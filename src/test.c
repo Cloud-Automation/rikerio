@@ -48,7 +48,7 @@ int main() {
 
     printf("Allocation %d bytes of memory ... ", size);
 
-    int retValAlloc = rio_memory_alloc(PROFILE, 0, size, &ptr, &offset);
+    int retValAlloc = rio_memory_alloc(PROFILE, size, &ptr, &offset);
 
     if (retValAlloc == -1) {
         printf("failed allocating memory (%s).\n", strerror(errno));
@@ -59,9 +59,16 @@ int main() {
 
     printf("List links ... ");
 
-    rio_key_t* linkList = NULL;
+    unsigned int linkCount = 0;
 
-    int retListLinks = rio_link_get(PROFILE, &linkList);
+    if (rio_link_count(PROFILE, &linkCount) == -1) {
+        fprintf(stderr, "Error counting links.\n");
+        return EXIT_FAILURE;
+    }
+
+    rio_link_t* linkList = calloc(linkCount, sizeof(rio_link_t));
+
+    int retListLinks = rio_link_get(PROFILE, linkList);
 
     if (retListLinks == -1) {
         printf("failed.\n");
@@ -84,7 +91,7 @@ int main() {
 
     while (index < 100) {
 
-        rio_key_t link;
+        rio_link_t link;
 
         sprintf(link, "in.data[%d]", index % 10);
 
@@ -92,7 +99,7 @@ int main() {
 
         printf("Adding link %s ... ", link);
 
-        if (rio_adr_add(PROFILE, 0, link, &adr) == -1) {
+        if (rio_link_adr_add(PROFILE, link, adr) == -1) {
             printf("failed.\n");
             return -1;
         }
@@ -103,14 +110,14 @@ int main() {
 
         unsigned int linkCount = 0;
 
-        if (rio_adr_count(PROFILE, 0, link, &linkCount) == -1) {
+        if (rio_link_adr_count(PROFILE, link, &linkCount) == -1) {
             fprintf(stderr, "Error getting adr count.\n");
             return -1;
         }
 
         rio_adr_t* adrList = calloc(linkCount, sizeof(rio_adr_t));
 
-        if (rio_adr_get(PROFILE, 0, link, adrList) == -1) {
+        if (rio_link_adr_get(PROFILE, link, adrList) == -1) {
 
             printf("failed\n");
             return -1;
@@ -139,12 +146,12 @@ int main() {
 
     for (unsigned int i = 0; i < 9; i+= 1) {
 
-        rio_key_t link;
+        rio_link_t link;
         sprintf(link, "in.data[%d]", i);
 
         printf("Removing link %s ... ", link);
 
-        if (rio_link_del(PROFILE, 0, link) == -1) {
+        if (rio_link_rm(PROFILE, link) == -1) {
             printf("failed!\n");
         } else {
             printf("successfull.\n");
@@ -152,31 +159,31 @@ int main() {
 
     }
 
-    retVal = rio_alias_add(PROFILE, "test-alias-01", "some-real-link");
+    retVal = rio_alias_link_add(PROFILE, "test-alias-01", "some-real-link");
 
     if (-1 == retVal) {
         fprintf(stderr, "Error adding alias (%s).\n", strerror(errno));
     }
 
-    retVal = rio_alias_add(PROFILE, "test-alias-01", "some-other-real-link");
+    retVal = rio_alias_link_add(PROFILE, "test-alias-01", "some-other-real-link");
 
     if (-1 == retVal) {
         fprintf(stderr, "Error adding alias (%s).\n", strerror(errno));
     }
 
-    retVal = rio_alias_rm(PROFILE, "test-alias-01", "some-noexisting-link");
+    retVal = rio_alias_link_rm(PROFILE, "test-alias-01", "some-noexisting-link");
 
     if (-1 == retVal) {
         fprintf(stderr, "Error removing link (%s).\n", strerror(errno));
     }
 
-    retVal = rio_alias_rm(PROFILE, "test-alias-01", "some-real-link");
+    retVal = rio_alias_link_rm(PROFILE, "test-alias-01", "some-real-link");
 
     if (-1 == retVal) {
         fprintf(stderr, "Error removing link (%s).\n", strerror(errno));
     }
 
-    retVal = rio_alias_rm(PROFILE, "test-alias-01", "some-other-real-link");
+    retVal = rio_alias_link_rm(PROFILE, "test-alias-01", "some-other-real-link");
 
     if (-1 == retVal) {
         fprintf(stderr, "Error removing link (%s).\n", strerror(errno));
@@ -185,19 +192,19 @@ int main() {
 
     /* do it again */
 
-    retVal = rio_alias_add(PROFILE, "test-alias-01", "some-real-link");
+    retVal = rio_alias_link_add(PROFILE, "test-alias-01", "some-real-link");
 
     if (-1 == retVal) {
         fprintf(stderr, "Error adding alias (%s).\n", strerror(errno));
     }
 
-    retVal = rio_alias_add(PROFILE, "test-alias-01", "some-other-real-link");
+    retVal = rio_alias_link_add(PROFILE, "test-alias-01", "some-other-real-link");
 
     if (-1 == retVal) {
         fprintf(stderr, "Error adding alias (%s).\n", strerror(errno));
     }
 
-    retVal = rio_alias_rm(PROFILE, "test-alias-01", NULL);
+    retVal = rio_alias_link_rm(PROFILE, "test-alias-01", NULL);
 
     if (-1 == retVal) {
         fprintf(stderr, "Error removing link (%s).\n", strerror(errno));
@@ -207,7 +214,7 @@ int main() {
 
     printf("Freeing all allocations from this process ... ");
 
-    int retValFree = rio_memory_freeall(PROFILE, 0);
+    int retValFree = rio_memory_freeall(PROFILE);
 
     if (retValFree == -1) {
         printf("failed freeing memory (%s).\n", strerror(errno));

@@ -72,7 +72,7 @@ FILE(GLOB HEADERS ${INC}/*.h)
 FILE(GLOB SOURCES ${SRC}/*.c)
 
 add_executable(rikerio-bin ${SRC}/main.c)
-set_target_properties(rikerio-bin PROPERTIES OUTPUT_NAME rikerio)
+set_target_properties(rikerio-bin PROPERTIES OUTPUT_NAME rio-server)
 target_include_directories(rikerio-bin PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 target_link_libraries(rikerio-bin systemd rt)
 install (TARGETS rikerio-bin RUNTIME DESTINATION sbin)

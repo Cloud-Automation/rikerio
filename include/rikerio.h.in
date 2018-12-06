@@ -22,11 +22,12 @@ struct rio_adr_entry_st;
 struct rio_alloc_entry_st;
 struct rio_alloc_st;
 typedef struct rio_adr_st rio_adr_t;
-typedef struct rio_adr_entry_st rio_adr_entry_t;
 typedef struct rio_alloc_entry_st rio_alloc_entry_t;
 typedef struct rio_alloc_st rio_alloc_t;
 
-typedef char rio_key_t[255];
+typedef char rio_label_t[255];
+typedef char rio_link_t[255];
+typedef char rio_alias_t[255];
 typedef char rio_profile_t[255];
 
 struct rio_adr_st
@@ -35,15 +36,8 @@ struct rio_adr_st
     uint8_t bitOffset;
 };
 
-struct rio_adr_entry_st
-{
-    pid_t pid;
-    rio_adr_t adr;
-};
-
 struct rio_alloc_entry_st
 {
-    pid_t pid;
     uint32_t offset;
     uint32_t size;
 };
@@ -65,14 +59,12 @@ int rio_profile_get(rio_profile_t[]);
 /**
  * @brief allocate new memory of the shared memory from a specific profile
  * @param char* profileId
- * @param pid_t pid;
  * @param uint32_t requested memory size
  * @param void** pointer
  * @param uint32_t* offset
  * @returns 0 on success, -1 on error
  */
-int rio_memory_alloc(char*, pid_t, uint32_t, char**, uint32_t*);
-
+int rio_memory_alloc(rio_profile_t, uint32_t, char**, uint32_t*);
 
 /**
  * @brief get memory pointer and memory size
@@ -81,16 +73,15 @@ int rio_memory_alloc(char*, pid_t, uint32_t, char**, uint32_t*);
  * @param uint32_t* memory size
  * @returns 0 on success, -1 on error
  */
-int rio_memory_get(char*, char**, size_t*);
+int rio_memory_get(rio_profile_t, char**, size_t*);
 
 /**
  * @brief free allocation on a profile with a offset
  * @param char* profileId
- * @param pid_t pid
  * @param uint32_t offset
  * @returns 0 on success, -1 on error
  */
-int rio_memory_free(char*, pid_t, uint32_t);
+int rio_memory_free(rio_profile_t, uint32_t);
 
 /**
  * @brief free all allocations from this process
@@ -98,7 +89,7 @@ int rio_memory_free(char*, pid_t, uint32_t);
  * @param pid_t pid
  * @returns 0 on success, -1 on error
  */
-int rio_memory_freeall(char*, pid_t);
+int rio_memory_freeall(rio_profile_t);
 
 /**
  * @brief List all allocations
@@ -107,105 +98,111 @@ int rio_memory_freeall(char*, pid_t);
  * @param rio_alloc_entry_t** List of allocations
  * @returns -1 on error, Number of allocations
  */
-int rio_memory_list(char*, pid_t, rio_alloc_entry_t**);
-
+int rio_memory_list(rio_profile_t, pid_t, rio_alloc_entry_t**);
 
 /**
  * @brief Add new link address
- * @param char* profileId
- * @param pid_t pid
- * @param rio_key_t link key
- * @param rio_adr_t* adr
+ * @param rio_profile_t profileId
+ * @param rio_link_t link key
+ * @param rio_adr_t adr
  * @returns 0 on success, -1 on failure
  */
-int rio_adr_add(char*, pid_t, rio_key_t, rio_adr_t*);
+int rio_link_adr_add(rio_profile_t, rio_link_t, rio_adr_t);
 
 /**
- * @brief Get adresse count from a link, when pid equals -1 then the result will not depend on the process id.
- * When pid equals zero then the result will depend on the current process id. Is the pid greater than
- * zero then the result will depend on the pid provided.
- * @param char* profileId
- * @param pid_t pid
- * @param rio_key_t key
+ * @brief Get adresse count from a link.
+ * @param rio_profile_t profile
+ * @param rio_link_t link
  * @param unsigned int* count value only valid when return value equals 0
  * @returns number of adresses or -1 on error
  */
 
-int rio_adr_count(const char*, pid_t, rio_key_t, unsigned int*);
+int rio_link_adr_count(rio_profile_t, rio_link_t, unsigned int*);
 
 /**
- * @brief Get all adr from a link, when pid equals -1 then the result will not depend on the process id.
- * When pid equals zero then the result will depend on the current process id. Is the pid greater than
- * zero then the result will depend on the pid provided.
- * @param char* profileId
- * @param pid_t pid
- * @param rio_key_t key
- * @param address list
- * @returns number of adresses or -1 on error
+ * @brief Get all adr from a link.
+ * @param rio_profile_t profile
+ * @param rio_link_t link
+ * @param rio_adr_t[] address list
+ * @returns 0 on success or -1 on error
  */
-int rio_adr_get(const char*, pid_t, rio_key_t, rio_adr_t[]);
+int rio_link_adr_get(rio_profile_t, rio_link_t, rio_adr_t[]);
 
+/**
+ * @brief Remove adr from link
+ * @param rio_profile_t profile
+ * @param rio_link_t link
+ * @param rio_adr_t adresse
+ * @returns -1 on failure, 0 on success
+ */
+int rio_link_adr_rm(rio_profile_t, rio_link_t, rio_adr_t);
+
+/**
+ * @brief Count links for a specific process or every link.
+ * @param char* profileId
+ * @param unsigned int& link count pointer
+ * @returns -1 on error, 0 on success
+ */
+int rio_link_count(rio_profile_t, unsigned int*);
 
 /**
  * @brief get list of links
  * @param char* profileId
- * @param pid_t pid
- * @param rio_key_t** return list of link keys
- * @return number of link on success, -1 on error
+ * @param rio_link_t[] return list of links
+ * @return 0 on success, -1 on error
  */
-int rio_link_get(char*, rio_key_t**);
+int rio_link_get(rio_profile_t, rio_link_t[]);
 
 /**
- * @brief remove all addresses in the link from this process
+ * @brief remove all addresses in the link
  * @param char* profileId
- * @param pid_t p
- * @param rio_key_t* link key
+ * @param rio_link_t link
  * @returns -1 on error, 0 on success
  */
-int rio_link_del(char*, pid_t, rio_key_t);
+int rio_link_rm(rio_profile_t, rio_link_t);
 
 /**
- * @brief clear all links/addresses from this process
- * @param char* profileId
- * @param pid_t pid
+ * @brief clear all links/addresses from a process
+ * @param rio_profile_t profile
  * @returns 0 on success, -1 on failure
  */
-int rio_link_clear(char*, pid_t);
+int rio_link_rmall(rio_profile_t);
 
 /**
  * @brief create alias.
- * @param char* profileId
- * @param char* alias
- * @param char* link
+ * @param rio_profile_t profile
+ * @param rio_alias_t alias
+ * @param rio_link_t link
  * @returns 0 on success, -1 on failure
  */
-int rio_alias_add(const char*, const char*, const char*);
+int rio_alias_link_add(rio_profile_t, rio_alias_t, rio_link_t);
 
 /**
  * @brief remove alias.
- * @param char* profileId
- * @param char* alias
- * @param char* link
+ * @param rio_profile_t profile
+ * @param rio_alias_t alias
+ * @param rio_link_t link
  * @returns 0 on success, -1 on failure
  */
-int rio_alias_rm(const char*, const char*, const char*);
+int rio_alias_link_rm(rio_profile_t, rio_alias_t, rio_link_t);
 
 /**
  * @brief get linkcount from alias
- * @param char* profileId
- * @param char* alias
+ * @param rio_profile_t profileId
+ * @param rio_alias_t alias
+ * @params unsigned int* pointer to count value
  * @returns number of links, -1 on error
  */
-int rio_alias_count(const char*, const char*, unsigned int*);
+int rio_alias_adr_count(rio_profile_t, rio_alias_t, unsigned int*);
 
 /**
  * @brief get links from alias
- * @param char* profileId
- * @param char* alias
+ * @param rio_profile_t profileId
+ * @param rio_alias_t alias
  * @param rio_adr_t[]
  * @returns 0 on success, -1 on error
  */
-int rio_alias_get(const char*, const char*, rio_adr_t[]);
+int rio_alias_adr_get(rio_profile_t, rio_alias_t, rio_adr_t[]);
 
 /**
  * @brief get semaphore key.
@@ -213,7 +210,7 @@ int rio_alias_get(const char*, const char*, rio_adr_t[]);
  * @param key_t* key
  * @returns -1 on error, 0 on success
  */
-int rio_sem_get(char*, key_t*);
+int rio_sem_get(rio_profile_t, key_t*);
 
 /**
  * @brief lock semaphore
@@ -226,6 +223,21 @@ int rio_sem_lock(int);
  * @param int semaphore id
  */
 int rio_sem_unlock(int);
+
+/**
+ * @brief sync lock for link and alias operations
+ * @param rio_profile_t profile
+ * @param int* handle to be passed to rio_unlock
+ * @returns 0 on success, -1 on error
+ */
+int rio_lock(rio_profile_t, int*);
+
+/**
+ * @brief sync unlock for link and alias operations
+ * @param int handle handle created by rio_lock
+ * @returns 0 on success, -1 on error
+ */
+int rio_unlock(int);
 
 #ifdef __cplusplus
 }

@@ -16,7 +16,7 @@
 #define RIO_MEMORY_SEM_LOCK -1
 #define RIO_MEMORY_SEM_UNLOCK 1
 
-static int rio_get_filesize(char* filename, size_t* filesize) {
+static int _rio_get_filesize(char* filename, size_t* filesize) {
 
     struct stat buffer = { };
     if (stat(filename, &buffer) == 0) {
@@ -28,7 +28,7 @@ static int rio_get_filesize(char* filename, size_t* filesize) {
 
 }
 
-static int rio_get_memory_pointer(char* filename, char** ptr, size_t size) {
+static int _rio_get_memory_pointer(char* filename, char** ptr, size_t size) {
 
     if (!filename || !ptr) {
         return -1;
@@ -55,15 +55,15 @@ static int rio_get_memory_pointer(char* filename, char** ptr, size_t size) {
     return 0;
 }
 
-static int rio_file_lock(int fd) {
+static int _rio_file_lock(int fd) {
     return flock(fd, LOCK_EX);
 }
 
-static int rio_file_unlock(int fd) {
+static int _rio_file_unlock(int fd) {
     return flock(fd, LOCK_UN);
 }
 
-static int rio_split_string(char* src, char*** trg) {
+static int _rio_split_string(char* src, char*** trg) {
 
     char delimiter[] = ";";
     char *ptr;
@@ -85,13 +85,44 @@ static int rio_split_string(char* src, char*** trg) {
 
 }
 
-static int rio_mparse(FILE* fp, rio_alloc_entry_t** list) {
+static int _rio_count_lines(FILE* fp, unsigned int* count) {
+
+    char* line = NULL;
+    size_t len = 0;
+    int cntr = 0;
+
+    if (fseek(fp, 0, SEEK_SET) != 0) {
+        return -1;
+    }
+
+    while (getline(&line, &len, fp) != -1) {
+        cntr += 1;
+    }
+
+    free(line);
+
+    *count = cntr;
+
+    return 0;
+
+}
+
+static int _rio_memory_count(FILE* fp, unsigned int* count) {
+
+    return _rio_count_lines(fp, count);
+
+}
+
+static int _rio_memory_parse(FILE* fp, rio_alloc_entry_t list[]) {
 
     char* line = NULL;
     size_t len = 0;
     ssize_t read;
     int cntr = 0;
 
+    if (fseek(fp, 0, SEEK_SET) != 0) {
+        return -1;
+    }
 
     while ((read = getline(&line, &len, fp)) != -1) {
 
@@ -101,28 +132,26 @@ static int rio_mparse(FILE* fp, rio_alloc_entry_t** list) {
         char tmp[255] = {};
         strncpy(tmp, line, strlen(line) - 1);
 
-        ret = rio_split_string(tmp, &strList);
+        ret = _rio_split_string(tmp, &strList);
 
         free(line);
         line = NULL;
 
         /* not enough information in this line */
 
-        if (ret != 3) {
+        if (ret != 2) {
             return -1;
         }
 
-        *list = realloc(*list, ++cntr * sizeof(rio_alloc_entry_t));
-
-        (*list)[cntr-1].pid = atoi(strList[0]);
-        (*list)[cntr-1].offset = atoi(strList[1]);
-        (*list)[cntr-1].size = atoi(strList[2]);
+        list[cntr].offset = atoi(strList[0]);
+        list[cntr].size = atoi(strList[1]);
 
         free(strList[0]);
         free(strList[1]);
-        free(strList[2]);
 
         free(strList);
+
+        cntr += 1;
 
     }
 
@@ -132,19 +161,29 @@ static int rio_mparse(FILE* fp, rio_alloc_entry_t** list) {
 
 }
 
-static int rio_aparse(FILE* fp, rio_adr_entry_t** list) {
+static int _rio_adr_count(FILE* fp, unsigned int* count) {
+
+    return _rio_count_lines(fp, count);
+
+}
+
+static int _rio_adr_parse(FILE* fp, rio_adr_t list[]) {
 
     char* line = NULL;
     size_t len = 0;
     ssize_t read;
     int cntr = 0;
 
+    if (fseek(fp, 0, SEEK_SET) != 0) {
+        return -1;
+    }
+
     while ((read = getline(&line, &len, fp)) != -1) {
 
         char** strList = NULL;
         int ret = 0;
 
-        ret = rio_split_string(line, &strList);
+        ret = _rio_split_string(line, &strList);
 
         free(line);
         line = NULL;
@@ -152,21 +191,19 @@ static int rio_aparse(FILE* fp, rio_adr_entry_t** list) {
 
         /* not enough information in this line */
 
-        if (ret != 3) {
+        if (ret != 2) {
             return -1;
         }
 
-        *list = realloc(*list, ++cntr * sizeof(rio_adr_entry_t));
-
-        (*list)[cntr-1].pid = atoi(strList[0]);
-        (*list)[cntr-1].adr.byteOffset = atoi(strList[1]);
-        (*list)[cntr-1].adr.bitOffset = atoi(strList[2]);
+        list[cntr].byteOffset = atoi(strList[0]);
+        list[cntr].bitOffset = atoi(strList[1]);
 
         free(strList[0]);
         free(strList[1]);
-        free(strList[2]);
 
         free(strList);
+
+        cntr += 1;
 
     }
 
@@ -176,7 +213,7 @@ static int rio_aparse(FILE* fp, rio_adr_entry_t** list) {
 
 }
 
-static int rio_mwrite(FILE* fp, rio_alloc_entry_t** list, unsigned int cntr) {
+static int _rio_memory_write(FILE* fp, rio_alloc_entry_t* list, unsigned int cntr) {
 
     int length = 0;
     int fd = fileno(fp);
@@ -185,7 +222,7 @@ static int rio_mwrite(FILE* fp, rio_alloc_entry_t** list, unsigned int cntr) {
 
     for (unsigned int i = 0; i < cntr; i += 1) {
 
-        int ret = fprintf(fp, "%d;%d;%d\n", (*list)[i].pid, (*list)[i].offset, (*list)[i].size);
+        int ret = fprintf(fp, "%d;%d\n", list[i].offset, list[i].size);
 
         if (ret == -1) {
             return -1;
@@ -199,7 +236,7 @@ static int rio_mwrite(FILE* fp, rio_alloc_entry_t** list, unsigned int cntr) {
 
 }
 
-static int rio_awrite(FILE* fp, rio_adr_entry_t** list, const unsigned int cntr) {
+static int _rio_adr_write(FILE* fp, rio_adr_t* list, const unsigned int cntr) {
 
     int length = 0;
     int fd = fileno(fp);
@@ -208,7 +245,7 @@ static int rio_awrite(FILE* fp, rio_adr_entry_t** list, const unsigned int cntr)
 
     for (unsigned int i = 0; i < cntr; i += 1) {
 
-        int ret = fprintf(fp, "%d;%d;%d\n", (*list)[i].pid, (*list)[i].adr.byteOffset, (*list)[i].adr.bitOffset);
+        int ret = fprintf(fp, "%d;%d\n", list[i].byteOffset, list[i].bitOffset);
 
         if (ret == -1) {
             return -1;
@@ -297,24 +334,23 @@ int rio_profile_get(rio_profile_t list[]) {
 }
 
 
-int rio_memory_alloc(char* id, pid_t p, uint32_t size, char** ptr, uint32_t* offset) {
+int rio_memory_alloc(rio_profile_t profile, uint32_t size, char** ptr, uint32_t* offset) {
 
     int retVal = 0;
-
-    pid_t pid = p == 0 ? getpid() : p;
 
     /* 1. get filesize of shm */
 
     char shmFile[255];
     char allocFile[255];
 
-    sprintf(shmFile, "%s/%s/%s", RIO_ROOT_PATH, id, RIO_SHM_FILE);
-    sprintf(allocFile, "%s/%s/%s", RIO_ROOT_PATH, id, RIO_ALLOC_FILE);
+    sprintf(shmFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_SHM_FILE);
+    sprintf(allocFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_ALLOC_FILE);
 
     size_t shmFilesize = 0;
 
-    if (rio_get_filesize(shmFile, &shmFilesize) == -1) {
-        return -1;
+    if (_rio_get_filesize(shmFile, &shmFilesize) == -1) {
+        retVal = -1;
+        goto exit;
     }
 
     /* 2. open file located on /var/www/rikerio/{id}/alloc */
@@ -322,42 +358,49 @@ int rio_memory_alloc(char* id, pid_t p, uint32_t size, char** ptr, uint32_t* off
     FILE* fp = fopen(allocFile, "r+");
 
     if (!fp) {
-        return -1;
+        retVal = -1;
+        goto exit;
     }
 
     int fd = fileno(fp);
 
-    if (rio_file_lock(fd) == -1) {
-        return -1;
+    if (_rio_file_lock(fd) == -1) {
+        retVal = -1;
+        goto releaseFile;
     }
 
     /* 2. get memory pointer */
 
     char* tp = NULL;
 
-    if (rio_get_memory_pointer(shmFile, &tp, shmFilesize) == -1) {
-        return -1;
+    if (_rio_get_memory_pointer(shmFile, &tp, shmFilesize) == -1) {
+        retVal = -1;
+        goto releaseFile;
     }
 
     /* 2. read allocations */
 
-    rio_alloc_entry_t* curList = NULL;
+    unsigned int allocCount = 0;
 
-    int cntr = rio_mparse(fp, &curList);
-
-    if (cntr == -1) {
+    if (_rio_memory_count(fp, &allocCount) == -1) {
         retVal = -1;
-        goto exit;
+        goto releaseFile;
     }
 
-    rio_alloc_entry_t* newList = calloc(1, (cntr + 1) * sizeof(rio_alloc_entry_t));
+    rio_alloc_entry_t* curList = calloc(allocCount, sizeof(rio_alloc_entry_t));
+    rio_alloc_entry_t* newList = calloc(1, (allocCount + 1) * sizeof(rio_alloc_entry_t));
+
+    if (_rio_memory_parse(fp, curList) == -1) {
+        retVal = -1;
+        goto release;
+    }
 
     /* 3. fit request */
 
     uint32_t bufferOffset = 0;
     int inserted = 0;
 
-    for (int i = 0; i < cntr + 1; i += 1) {
+    for (unsigned int i = 0; i < allocCount + 1; i += 1) {
 
         if (inserted) {
             memcpy(&newList[i + inserted], &curList[i], sizeof(rio_alloc_entry_t));
@@ -366,14 +409,14 @@ int rio_memory_alloc(char* id, pid_t p, uint32_t size, char** ptr, uint32_t* off
 
         long diff;
 
-        if (i == cntr) {
+        if (i == allocCount) {
             diff = shmFilesize - bufferOffset;
         } else {
             diff = curList[i].offset - bufferOffset;
         }
 
         if (diff >= size && !inserted) {
-            rio_alloc_entry_t newEntry = { pid, bufferOffset, size };
+            rio_alloc_entry_t newEntry = { bufferOffset, size };
             memcpy(&newList[i], &newEntry, sizeof(rio_alloc_entry_t));
             inserted = 1;
             *offset = bufferOffset;
@@ -387,38 +430,44 @@ int rio_memory_alloc(char* id, pid_t p, uint32_t size, char** ptr, uint32_t* off
 
     if (!inserted) {
         retVal = -1;
-        goto exit;
+        goto release;
     }
 
     /* 5. write back */
 
-    if (rio_mwrite(fp, &newList, cntr + 1) == -1) {
+    if (_rio_memory_write(fp, newList, allocCount + 1) == -1) {
         retVal = -1;
     }
 
-exit:
+release:
+
     free(curList);
     free(newList);
 
-    rio_file_unlock(fd);
+releaseFile:
+
+    _rio_file_unlock(fd);
     fclose(fp);
+
+
+exit:
 
     return retVal;
 
 }
 
-int rio_memory_get(char* id, char** ptr, size_t* size) {
+int rio_memory_get(rio_profile_t profile, char** ptr, size_t* size) {
 
     /* 1. get filesize of shm */
 
     char shmFile[255];
-    sprintf(shmFile, "%s/%s/%s", RIO_ROOT_PATH, id, RIO_SHM_FILE);
+    sprintf(shmFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_SHM_FILE);
 
     /* 2. get filesize */
 
     size_t shmFilesize = 0;
 
-    if (rio_get_filesize(shmFile, &shmFilesize) == -1) {
+    if (_rio_get_filesize(shmFile, &shmFilesize) == -1) {
         return -1;
     }
 
@@ -428,7 +477,7 @@ int rio_memory_get(char* id, char** ptr, size_t* size) {
 
     char* tp = NULL;
 
-    if (rio_get_memory_pointer(shmFile, &tp, shmFilesize) == -1) {
+    if (_rio_get_memory_pointer(shmFile, &tp, shmFilesize) == -1) {
         return -1;
     }
 
@@ -438,54 +487,56 @@ int rio_memory_get(char* id, char** ptr, size_t* size) {
 
 }
 
-int rio_memory_free(char* id, pid_t p, uint32_t offset) {
+int rio_memory_free(rio_profile_t profile, uint32_t offset) {
 
     int retVal = 0;
-
-    /* 0. get process id */
-
-    pid_t pid = p == 0 ? getpid() : p;
 
     /* set allocation filename */
 
     char allocFile[255];
 
-    sprintf(allocFile, "%s/%s/%s", RIO_ROOT_PATH, id, RIO_ALLOC_FILE);
+    sprintf(allocFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_ALLOC_FILE);
 
     /* 2. open and lock file located on /var/www/rikerio/{id}/alloc */
 
     FILE* fp = fopen(allocFile, "r+");
 
     if (!fp) {
-        return -1;
-    }
-
-    int fd = fileno(fp);
-
-    if (rio_file_lock(fd) == -1) {
-        return -1;
-    }
-
-    /* 3. read allocations */
-
-    rio_alloc_entry_t* curList = NULL;
-
-    int cntr = rio_mparse(fp, &curList);
-
-    if (cntr <= 0) {
         retVal = -1;
         goto exit;
     }
 
-    rio_alloc_entry_t* newList = calloc(1, (cntr - 1) * sizeof(rio_alloc_entry_t));
+    int fd = fileno(fp);
+
+    if (_rio_file_lock(fd) == -1) {
+        retVal = -1;
+        goto exit;
+    }
+
+    /* 3. read allocations */
+
+    unsigned int allocCount = 0;
+
+    if (_rio_memory_count(fp, &allocCount) == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+    rio_alloc_entry_t* curList = calloc(allocCount, sizeof(rio_alloc_entry_t));
+    rio_alloc_entry_t* newList = calloc(allocCount - 1, sizeof(rio_alloc_entry_t));
+
+    if (_rio_memory_parse(fp, curList) == -1) {
+        retVal = -1;
+        goto release;
+    }
 
     /* 4. fit request */
 
     int removed = 0;
 
-    for (int i = 0; i < cntr; i += 1) {
+    for (unsigned int i = 0; i < allocCount; i += 1) {
 
-        if (curList[i].offset == offset && curList[i].pid == pid) {
+        if (curList[i].offset == offset) {
             removed += 1;
             continue;
         }
@@ -496,137 +547,78 @@ int rio_memory_free(char* id, pid_t p, uint32_t offset) {
 
     if (removed == 0) {
         retVal = -1;
-        goto exit;
+        goto release;
     }
 
     /* 5. write back */
 
-    if (rio_mwrite(fp, &newList, cntr - 1) == -1) {
+    if (_rio_memory_write(fp, newList, allocCount - 1) == -1) {
         retVal = -1;
     }
 
 
-exit:
+release:
 
     free(curList);
     free(newList);
-    rio_file_unlock(fd);
+
+releaseFile:
+
+    _rio_file_unlock(fd);
     fclose(fp);
+
+exit:
 
     return retVal;
 
 }
 
-int rio_memory_freeall(char* id, pid_t p) {
+int rio_memory_freeall(rio_profile_t profile) {
 
     int retVal = 0;
-
-    /* 0. get process id */
-
-    pid_t pid = p == 0 ? getpid() : p;
 
     /* set allocation filename */
 
     char allocFile[255];
 
-    sprintf(allocFile, "%s/%s/%s", RIO_ROOT_PATH, id, RIO_ALLOC_FILE);
+    sprintf(allocFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_ALLOC_FILE);
 
     /* 2. open and lock file located on /var/www/rikerio/{id}/alloc */
 
-    FILE* fp = fopen(allocFile, "r+");
+    FILE* fp = fopen(allocFile, "w");
 
     if (!fp) {
-        return -1;
-    }
-
-    int fd = fileno(fp);
-
-    if (rio_file_lock(fd) == -1) {
-        return -1;
-    }
-
-    /* 3. read allocations */
-
-    rio_alloc_entry_t* curList = NULL;
-
-    int cntr = rio_mparse(fp, &curList);
-
-    if (cntr <= 0) {
         retVal = -1;
-        goto exit;
     }
 
-    rio_alloc_entry_t* newList = calloc(1, (cntr - 1) * sizeof(rio_alloc_entry_t));
-
-    /* 4. fit request */
-
-    int removed = 0;
-
-    for (int i = 0; i < cntr; i += 1) {
-
-        if (curList[i].pid == pid) {
-            removed += 1;
-            continue;
-        }
-
-        memcpy(&newList[i-removed], &curList[i], sizeof(rio_alloc_entry_t));
-
-    }
-
-    if (removed == 0) {
-        retVal = -1;
-        goto exit;
-    }
-
-    /* 5. write back */
-
-    int newLength = rio_mwrite(fp, &newList, cntr - 1);
-
-    if (newLength == -1) {
-        retVal = -1;
-        goto exit;
-    }
-
-    if (ftruncate(fd, newLength) == -1) {
-        retVal = 1;
-    };
-
-exit:
-
-    free(curList);
-    free(newList);
-    rio_file_unlock(fd);
     fclose(fp);
-
     return retVal;
 
 }
 
 
-int rio_adr_add(char* id, pid_t p, rio_key_t key, rio_adr_t* adr) {
+int rio_link_adr_add(rio_profile_t profile, rio_link_t key, rio_adr_t adr) {
 
     int retVal = 0;
-
-    /* 0. get process id */
-
-    pid_t pid = p == 0 ? getpid() : p;
 
     /* 1. get filesize of shm */
 
     char shmFile[255];
     char linkFile[255];
 
-    sprintf(shmFile, "%s/%s/%s", RIO_ROOT_PATH, id, RIO_SHM_FILE);
-    sprintf(linkFile, "%s/%s/links/%s", RIO_ROOT_PATH, id, key);
+    sprintf(shmFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_SHM_FILE);
+    sprintf(linkFile, "%s/%s/links/%s", RIO_ROOT_PATH, profile, key);
 
     size_t shmFilesize = 0;
 
-    if (rio_get_filesize(shmFile, &shmFilesize) == -1) {
-        return -1;
+    if (_rio_get_filesize(shmFile, &shmFilesize) == -1) {
+        retVal = -1;
+        goto exit;
     }
 
-    if (adr->byteOffset >= shmFilesize) {
-        return -1;
+    if (adr.byteOffset >= shmFilesize) {
+        retVal = -1;
+        goto exit;
     }
 
     /* 2. open file located on /var/www/rikerio/{id}/links/{key} */
@@ -638,34 +630,41 @@ int rio_adr_add(char* id, pid_t p, rio_key_t key, rio_adr_t* adr) {
     }
 
     if (!fp) {
-        return -1;
+        retVal = -1;
+        goto exit;
     }
 
     int fd = fileno(fp);
 
-    if (rio_file_lock(fd) == -1) {
-        return -1;
+    if (_rio_file_lock(fd) == -1) {
+        retVal = 1;
+        goto releaseFile;
     }
 
     /* 3. read allocations */
 
-    rio_adr_entry_t* curList = NULL;
+    unsigned int adrCount = 0;
 
-    int cntr = rio_aparse(fp, &curList);
-
-    if (cntr == -1) {
+    if (_rio_adr_count(fp, &adrCount) == -1) {
         retVal = -1;
-        goto exit;
+        goto releaseFile;
+    }
+
+    rio_adr_t* curList = calloc(adrCount, sizeof(rio_adr_t));
+
+    if (_rio_adr_parse(fp, curList) == -1) {
+        retVal = -1;
+        goto release;
     }
 
     /* 4. check entries */
 
     int found = 0;
 
-    for (int i = 0; i < cntr; i += 1) {
+    for (unsigned int i = 0; i < adrCount; i += 1) {
 
-        if (curList[i].adr.byteOffset == adr->byteOffset &&
-                curList[i].adr.bitOffset == adr->bitOffset) {
+        if (curList[i].byteOffset == adr.byteOffset &&
+                curList[i].bitOffset == adr.bitOffset) {
             found = 1;
             break;
         }
@@ -674,180 +673,186 @@ int rio_adr_add(char* id, pid_t p, rio_key_t key, rio_adr_t* adr) {
 
     if (found) {
         retVal = 0;
-        goto exit;
-        return 0;
+        goto release;
     }
 
     /* 5. write back */
 
-    rio_adr_entry_t adrE = {
-        pid, *adr
-    };
-
-    int ret = fprintf(fp, "%d;%d;%d\n", adrE.pid, adrE.adr.byteOffset, adrE.adr.bitOffset);
+    int ret = fprintf(fp, "%d;%d\n", adr.byteOffset, adr.bitOffset);
 
     if (ret == -1) {
         retVal = -1;
     }
 
-exit:
+release:
 
     free(curList);
-    rio_file_unlock(fd);
+
+releaseFile:
+
+    _rio_file_unlock(fd);
     fclose(fp);
 
+exit:
     return retVal;
 
 }
 
-int rio_adr_count(const char* id, pid_t p, rio_key_t key, unsigned int* count) {
-
-    if (count == NULL) {
-        return -1;
-    }
+int rio_link_adr_count(rio_profile_t profile, rio_link_t key, unsigned int* count) {
 
     int retVal = 0;
+
+    if (count == NULL) {
+        retVal = -1;
+        goto exit;
+    }
+
     unsigned int retCntr = 0;
-
-    /* 0. get process id */
-
-
-    pid_t pid = p == 0 ? getpid() : p;
 
     /* 1. get filesize of shm */
 
     char linkFile[255];
 
-    sprintf(linkFile, "%s/%s/links/%s", RIO_ROOT_PATH, id, key);
+    sprintf(linkFile, "%s/%s/links/%s", RIO_ROOT_PATH, profile, key);
 
     /* 2. open file located on /var/www/rikerio/{id}/links/{key} */
 
     FILE* fp = fopen(linkFile, "r");
 
     if (!fp) {
-        return -1;
+        retVal = 0;
+        *count = 0;
+        goto exit;
     }
 
     int fd = fileno(fp);
 
-    if (rio_file_lock(fd) == -1) {
-        return -1;
+    if (_rio_file_lock(fd) == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+    if (_rio_adr_count(fp, &retCntr) == -1) {
+        retVal = -1;
+        goto releaseFile;
     }
 
     /* 3. read allocations */
-
-    rio_adr_entry_t* curList = NULL;
-
-    int cntr = rio_aparse(fp, &curList);
-
-    if (cntr == -1) {
-        retVal = -1;
-        goto exit;
-    }
-
-    /* 4. return */
-
-    unsigned int newCntr = 0;
-
-    for (int i = 0; i < cntr; i += 1) {
-
-        if (pid != -1 && curList[i].pid != pid) {
-            continue;
-        }
-
-        retCntr += 1;
-
-
-    }
 
     *count = retCntr;
 
-    retVal = newCntr;
+releaseFile:
+
+    _rio_file_unlock(fd);
+    fclose(fp);
 
 exit:
-
-    free(curList);
-    rio_file_unlock(fd);
-    fclose(fp);
 
     return retVal;
 
 
 }
 
-int rio_adr_get(const char* id, pid_t p, rio_key_t key, rio_adr_t adr[]) {
+int rio_link_adr_get(rio_profile_t profile, rio_link_t key, rio_adr_t adr[]) {
 
     int retVal = 0;
-
-    /* 0. get process id */
-
-    pid_t pid = p == 0 ? getpid() : p;
 
     /* 1. get filesize of shm */
 
     char linkFile[255];
 
-    sprintf(linkFile, "%s/%s/links/%s", RIO_ROOT_PATH, id, key);
+    sprintf(linkFile, "%s/%s/links/%s", RIO_ROOT_PATH, profile, key);
 
     /* 2. open file located on /var/www/rikerio/{id}/links/{key} */
 
     FILE* fp = fopen(linkFile, "r");
 
     if (!fp) {
-        return -1;
+        retVal = 0;
+        goto exit;
     }
 
     int fd = fileno(fp);
 
-    if (rio_file_lock(fd) == -1) {
-        return -1;
+    if (_rio_file_lock(fd) == -1) {
+        retVal = -1;
+        goto releaseFile;
     }
 
     /* 3. read allocations */
 
-    rio_adr_entry_t* curList = NULL;
-
-    int cntr = rio_aparse(fp, &curList);
-
-    if (cntr == -1) {
+    if (_rio_adr_parse(fp, adr) == -1) {
         retVal = -1;
-        goto exit;
+        goto releaseFile;
     }
 
-    /* 4. return */
+releaseFile:
 
-    unsigned int newCntr = 0;
-
-    for (int i = 0; i < cntr; i += 1) {
-
-        if (pid != -1 && curList[i].pid != pid) {
-            continue;
-        }
-
-        memcpy(&adr[newCntr++], &curList[i].adr, sizeof(rio_adr_t));
-
-    }
-
-    retVal = newCntr;
+    _rio_file_unlock(fd);
+    fclose(fp);
 
 exit:
-
-    free(curList);
-    rio_file_unlock(fd);
-    fclose(fp);
 
     return retVal;
 
 }
 
+int rio_link_count(rio_profile_t profile, unsigned int* linkCount) {
 
-int rio_link_get(char* id, rio_key_t** linkList) {
+    int retVal = 0;
 
-    /* create link folder */
+    if (NULL == linkCount) {
+        retVal = -1;
+        goto exit;
+    }
+
+    /* get link folder */
+
+    char linkFolder[255];
+
+    sprintf(linkFolder, "%s/%s/links", RIO_ROOT_PATH, profile);
+
+    /* open dir */
+
+    DIR *dir;
+    if ((dir = opendir (linkFolder)) == NULL) {
+        retVal = -1;
+        goto exit;
+    }
+
+    /* read dir content */
+
+    int cntr = 0;
+    struct dirent *ent;
+
+    while ((ent = readdir (dir)) != NULL) {
+
+        if (strcmp(ent->d_name, ".") == 0) {
+            continue;
+        }
+
+        if (strcmp(ent->d_name, "..") == 0) {
+            continue;
+        }
+
+        cntr += 1;
+
+    }
+
+    *linkCount = cntr;
+
+
+exit:
+    closedir (dir);
+    return retVal;
+
+}
+
+int rio_link_get(rio_profile_t profile, rio_link_t list[]) {
 
     char linksFolder[255];
 
-    sprintf(linksFolder, "%s/%s/links", RIO_ROOT_PATH, id);
+    sprintf(linksFolder, "%s/%s/links", RIO_ROOT_PATH, profile);
 
     /* open dir */
 
@@ -871,146 +876,83 @@ int rio_link_get(char* id, rio_key_t** linkList) {
             continue;
         }
 
-        *linkList = realloc(*linkList, ++cntr * sizeof(rio_key_t));
+        memcpy(&list[cntr], ent->d_name, strlen(ent->d_name));
 
-        memset(&(*linkList)[cntr-1], 0, sizeof(rio_key_t));
-
-        memcpy(&(*linkList)[cntr-1], ent->d_name, strlen(ent->d_name));
+        cntr += 1;
 
     }
 
     closedir (dir);
 
-    return cntr;
+    return 0;
 
 }
 
 
-int rio_link_del(char* id, pid_t p, rio_key_t key) {
+int rio_link_rm(rio_profile_t profile, rio_link_t key) {
 
     int retVal = 0;
-
-    /* 0. get process id */
-
-    pid_t pid = p == 0 ? getpid() : p;
-
-    /* 1. get filesize of shm */
 
     char linkFile[255];
 
-    sprintf(linkFile, "%s/%s/links/%s", RIO_ROOT_PATH, id, key);
+    sprintf(linkFile, "%s/%s/links/%s", RIO_ROOT_PATH, profile, key);
 
-
-    /* 2. open file located on /var/www/rikerio/{id}/links/{key} */
-
-    FILE* fp = fopen(linkFile, "r+");
-
-    if (!fp) {
+    if (unlink(linkFile) == -1) {
         return -1;
-    }
-
-    int fd = fileno(fp);
-
-    if (rio_file_lock(fd) == -1) {
-        return -1;
-    }
-
-    /* 3. read allocations */
-
-    rio_adr_entry_t* curList = NULL;
-
-    int cntr = rio_aparse(fp, &curList);
-
-    if (cntr == -1) {
-        retVal = -1;
-        goto exit;
-    }
-
-
-    /* 4. remove addresses */
-
-    int removed = 0;
-
-    rio_adr_entry_t* newList = NULL;
-
-    for (int i = 0; i < cntr; i += 1) {
-
-        if (curList[i].pid == pid) {
-            removed += 1;
-            continue;
-        }
-
-        newList = realloc(newList, (cntr - removed + 1) * sizeof(rio_adr_entry_t));
-
-        memcpy(&newList[i-removed], &curList[i], sizeof(rio_adr_entry_t));
-
-    }
-
-    if (removed == 0) {
-        retVal = -1;
-        goto exit;
-    }
-
-    /* 5. write back */
-
-    int newLength = rio_awrite(fp, &newList, cntr - removed);
-
-    if (newLength == -1) {
-        retVal = -1;
-        goto exit;
-    }
-
-    if (ftruncate(fd, newLength) == -1) {
-        retVal = 1;
     };
-
-exit:
-
-    free(curList);
-    free(newList);
-    rio_file_unlock(fd);
-    fclose(fp);
 
     return retVal;
 
 }
 
 
-int rio_link_clear(char* id, pid_t p) {
+int rio_link_rmall(rio_profile_t profile) {
 
     int retVal = 0;
 
-    /* 1. get links */
+    char linksFolder[255];
 
-    rio_key_t* keys = NULL;
+    sprintf(linksFolder, "%s/%s/links", RIO_ROOT_PATH, profile);
 
-    int linkCount = rio_link_get(id, &keys);
+    /* open dir */
 
-    if (linkCount == -1) {
+    DIR *dir;
+    if ((dir = opendir (linksFolder)) == NULL) {
         return -1;
     }
 
-    /* 2. ldel pid in every links */
+    /* read dir content */
 
-    int delCount = 0;
+    struct dirent *ent;
 
-    for (int i = 0; i < linkCount; i += 1) {
+    while ((ent = readdir (dir)) != NULL) {
 
-        if (rio_link_del(id, p, keys[i]) == -1) {
-            return -1;
+        if (strcmp(ent->d_name, ".") == 0) {
+            continue;
         }
 
-        delCount += 1;
+        if (strcmp(ent->d_name, "..") == 0) {
+            continue;
+        }
+
+        char linkFile[255] = { 0 };
+
+        sprintf(linkFile, "%s/%s", linksFolder, ent->d_name);
+
+        if (unlink(linkFile) == -1) {
+            retVal = -1;
+            continue;
+        }
 
     }
 
-    retVal = delCount;
+    closedir (dir);
 
     return retVal;
 
 }
 
-int rio_alias_add(const char* profile, const char* alias, const char* link) {
+int rio_alias_link_add(rio_profile_t profile, rio_alias_t alias, rio_link_t link) {
 
     int created = 0;
     int found = 0;
@@ -1035,7 +977,7 @@ int rio_alias_add(const char* profile, const char* alias, const char* link) {
 
     int fd = fileno(fp);
 
-    if (rio_file_lock(fd) == -1) {
+    if (_rio_file_lock(fd) == -1) {
         retVal = -1;
         goto exit;
     }
@@ -1071,13 +1013,13 @@ int rio_alias_add(const char* profile, const char* alias, const char* link) {
     /* 4. close and unlock file */
 
 exit:
-    rio_file_unlock(fd);
+    _rio_file_unlock(fd);
     fclose(fp);
 
     return retVal;
 }
 
-int rio_alias_rm(const char* profile, const char* alias, const char* link) {
+int rio_alias_link_rm(rio_profile_t profile, rio_alias_t alias, rio_link_t link) {
 
     int found = 0;
     int retVal = 0;
@@ -1096,7 +1038,7 @@ int rio_alias_rm(const char* profile, const char* alias, const char* link) {
 
     int fd = fileno(fp);
 
-    if (rio_file_lock(fd) == -1) {
+    if (_rio_file_lock(fd) == -1) {
         retVal = -1;
         goto exit;
     }
@@ -1150,13 +1092,13 @@ int rio_alias_rm(const char* profile, const char* alias, const char* link) {
 
 exit:
 
-    rio_file_unlock(fd);
+    _rio_file_unlock(fd);
     fclose(fp);
     return retVal;
 
 }
 
-int rio_alias_count(const char* profile, const char* alias, unsigned int* count) {
+int rio_alias_adr_count(rio_profile_t profile, rio_alias_t alias, unsigned int* count) {
 
     if (alias == NULL || count == NULL) {
         return -1;
@@ -1174,14 +1116,16 @@ int rio_alias_count(const char* profile, const char* alias, unsigned int* count)
     FILE* fp = fopen(linkFile, "r+");
 
     if (!fp) {
-        return -1;
+        retVal = 0;
+        *count = 0;
+        goto exit;
     }
 
     int fd = fileno(fp);
 
-    if (rio_file_lock(fd) == -1) {
+    if (_rio_file_lock(fd) == -1) {
         retVal = -1;
-        goto exit;
+        goto releaseFile;
     }
 
 
@@ -1191,14 +1135,12 @@ int rio_alias_count(const char* profile, const char* alias, unsigned int* count)
     size_t len = 0;
     while (getline(&line, &len, fp) != -1) {
 
-
         unsigned int cnt = 0;
-        rio_key_t key = { };
-        strcpy(key, line);
+        rio_link_t key = { };
+        strncpy(key, line, strlen(line) - 1);
 
-        if (rio_adr_count(profile, -1, key, &cnt) == -1) {
-            retVal = -1;
-            goto exit;
+        if (rio_link_adr_count(profile, key, &cnt) == -1) {
+            continue;
         }
 
         adrCount += cnt;
@@ -1207,17 +1149,21 @@ int rio_alias_count(const char* profile, const char* alias, unsigned int* count)
 
     *count = adrCount;
 
+
+releaseFile:
+
     /* 4. close and unlock file */
 
-exit:
-    rio_file_unlock(fd);
+    _rio_file_unlock(fd);
     fclose(fp);
+
+exit:
 
     return retVal;
 
 }
 
-int rio_alias_get(const char* profile, const char* alias, rio_adr_t list[]) {
+int rio_alias_adr_get(rio_profile_t profile, rio_alias_t alias, rio_adr_t list[]) {
 
     if (alias == NULL || list == NULL) {
         return -1;
@@ -1227,21 +1173,22 @@ int rio_alias_get(const char* profile, const char* alias, rio_adr_t list[]) {
 
     /* 1. try to open and lock file RIO_PERS_PATH/{profile}/alias/{alias} */
 
-    char linkFile[255];
+    char aliasFile[255];
 
-    sprintf(linkFile, "%s/%s/alias/%s", RIO_PERS_PATH, profile, alias);
+    sprintf(aliasFile, "%s/%s/alias/%s", RIO_PERS_PATH, profile, alias);
 
-    FILE* fp = fopen(linkFile, "r+");
+    FILE* fp = fopen(aliasFile, "r+");
 
     if (!fp) {
-        return -1;
+        retVal = 0;
+        goto exit;
     }
 
     int fd = fileno(fp);
 
-    if (rio_file_lock(fd) == -1) {
+    if (_rio_file_lock(fd) == -1) {
         retVal = -1;
-        goto exit;
+        goto releaseFile;
     }
 
 
@@ -1253,19 +1200,18 @@ int rio_alias_get(const char* profile, const char* alias, rio_adr_t list[]) {
     while (getline(&line, &len, fp) != -1) {
 
         unsigned int cnt = 0;
-        rio_key_t key = { };
-        strcpy(key, line);
+        rio_link_t key = { };
+        strncpy(key, line, strlen(line)-1);
 
-        if (rio_adr_count(profile, -1, key, &cnt) == -1) {
+        if (rio_link_adr_count(profile, key, &cnt) == -1) {
             retVal = -1;
-            goto exit;
+            goto releaseFile;
         }
 
         rio_adr_t* adrList = calloc(cnt, sizeof(rio_adr_t));
 
-        if (rio_adr_get(profile, -1, key, adrList) == -1) {
-            retVal = -1;
-            goto exit;
+        if (rio_link_adr_get(profile, key, adrList) == -1) {
+            continue;
         }
 
         for (unsigned int i = 0; i < cnt; i += 1) {
@@ -1275,23 +1221,27 @@ int rio_alias_get(const char* profile, const char* alias, rio_adr_t list[]) {
     }
 
 
+
+releaseFile:
+
     /* 4. close and unlock file */
 
-exit:
-    rio_file_unlock(fd);
+    _rio_file_unlock(fd);
     fclose(fp);
+
+exit:
 
     return retVal;
 
 }
 
-int rio_sem_get(char* id, key_t* key) {
+int rio_sem_get(rio_profile_t profile, key_t* key) {
 
     /* 1. get filesize of shm */
 
     char shmKeyFile[255];
 
-    sprintf(shmKeyFile, "%s/%s/%s", RIO_ROOT_PATH, id, RIO_SEM_FILE);
+    sprintf(shmKeyFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_SEM_FILE);
 
     /* 2. open and read file */
 
@@ -1338,4 +1288,65 @@ int rio_sem_unlock(int semId) {
     }
 
     return 1;
+}
+
+int rio_lock(rio_profile_t profile, int* handle) {
+
+
+    int retVal = 0;
+
+    if (handle == NULL) {
+        retVal = -1;
+        goto exit;
+    }
+
+    /* 1. try to open and lock file RIO_ROOT_PATH/{profile}/sync */
+
+    char linkFile[255];
+
+    sprintf(linkFile, "%s/%s/sync", RIO_ROOT_PATH, profile);
+
+    FILE* fp = fopen(linkFile, "r");
+
+    if (!fp) {
+        retVal = -1;
+        goto exit;
+    }
+
+    int fd = fileno(fp);
+
+    if (_rio_file_lock(fd) == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+    *handle = fd;
+
+    goto exit;
+
+releaseFile:
+
+    fclose(fp);
+
+exit:
+
+    return retVal;
+
+}
+
+int rio_unlock(int handle) {
+
+    int retVal = 0;
+
+    if (_rio_file_lock(handle) == -1) {
+        retVal = -1;
+        goto exit;
+    }
+
+    close(handle);
+
+exit:
+    return retVal;
+
+
 }
