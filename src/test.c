@@ -48,7 +48,7 @@ int main() {
 
     printf("Allocation %d bytes of memory ... ", size);
 
-    int retValAlloc = rio_memory_alloc(PROFILE, size, &ptr, &offset);
+    int retValAlloc = rio_alloc_add(PROFILE, size, &ptr, &offset);
 
     if (retValAlloc == -1) {
         printf("failed allocating memory (%s).\n", strerror(errno));
@@ -210,11 +210,9 @@ int main() {
         fprintf(stderr, "Error removing link (%s).\n", strerror(errno));
     }
 
-
-
     printf("Freeing all allocations from this process ... ");
 
-    int retValFree = rio_memory_freeall(PROFILE);
+    int retValFree = rio_alloc_rmall(PROFILE);
 
     if (retValFree == -1) {
         printf("failed freeing memory (%s).\n", strerror(errno));

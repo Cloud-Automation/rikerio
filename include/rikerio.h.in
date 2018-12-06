@@ -45,9 +45,10 @@ struct rio_alloc_entry_st
 
 /**
  * @brief get number of profiles
- * @returns number of profiles or -1 on failure
+ * @params unsigned int* pointer to the count value
+ * @returns 0 on success or -1 on failure
  */
-int rio_profile_count();
+int rio_profile_count(unsigned int*);
 
 /**
  * @brief get available memory profiles
@@ -57,6 +58,16 @@ int rio_profile_count();
 int rio_profile_get(rio_profile_t[]);
 
 /**
+ * @brief receive memory pointer and memory size
+ * @param char* profile
+ * @param char** memory pointer
+ * @param uint32_t* memory size
+ * @returns 0 on success, -1 on error
+ */
+int rio_memory_inspect(rio_profile_t, char**, size_t*);
+
+
+/**
  * @brief allocate new memory of the shared memory from a specific profile
  * @param char* profileId
  * @param uint32_t requested memory size
@@ -64,16 +75,7 @@ int rio_profile_get(rio_profile_t[]);
  * @param uint32_t* offset
  * @returns 0 on success, -1 on error
  */
-int rio_memory_alloc(rio_profile_t, uint32_t, char**, uint32_t*);
-
-/**
- * @brief get memory pointer and memory size
- * @param char* profileId
- * @param void** memory pointer
- * @param uint32_t* memory size
- * @returns 0 on success, -1 on error
- */
-int rio_memory_get(rio_profile_t, char**, size_t*);
+int rio_alloc_add(rio_profile_t, uint32_t, char**, uint32_t*);
 
 /**
  * @brief free allocation on a profile with a offset
@@ -81,7 +83,7 @@ int rio_memory_get(rio_profile_t, char**, size_t*);
  * @param uint32_t offset
  * @returns 0 on success, -1 on error
  */
-int rio_memory_free(rio_profile_t, uint32_t);
+int rio_alloc_rm(rio_profile_t, uint32_t);
 
 /**
  * @brief free all allocations from this process
@@ -89,16 +91,23 @@ int rio_memory_free(rio_profile_t, uint32_t);
  * @param pid_t pid
  * @returns 0 on success, -1 on error
  */
-int rio_memory_freeall(rio_profile_t);
+int rio_alloc_rmall(rio_profile_t);
+
+/**
+ * @brief get memory allocation count
+ * @param rio_profile_t profile
+ * @param unsigned int* pointer to allocation count value
+ * @returns 0 on success, -1 on error
+ */
+int rio_alloc_count(rio_profile_t, unsigned int*);
 
 /**
  * @brief List all allocations
- * @param char* profileId
- * @param pid_t
- * @param rio_alloc_entry_t** List of allocations
- * @returns -1 on error, Number of allocations
+ * @param char* profile
+ * @param rio_alloc_entry_t[] List of allocations
+ * @returns 0 on success, -1 on error
  */
-int rio_memory_list(rio_profile_t, pid_t, rio_alloc_entry_t**);
+int rio_alloc_get(rio_profile_t, rio_alloc_entry_t[]);
 
 /**
  * @brief Add new link address

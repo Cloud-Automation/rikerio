@@ -333,8 +333,38 @@ int rio_profile_get(rio_profile_t list[]) {
 
 }
 
+int rio_memory_inspect(rio_profile_t profile, char** ptr, size_t* size) {
 
-int rio_memory_alloc(rio_profile_t profile, uint32_t size, char** ptr, uint32_t* offset) {
+    /* 1. get filesize of shm */
+
+    char shmFile[255];
+    sprintf(shmFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_SHM_FILE);
+
+    /* 2. get filesize */
+
+    size_t shmFilesize = 0;
+
+    if (_rio_get_filesize(shmFile, &shmFilesize) == -1) {
+        return -1;
+    }
+
+    *size = shmFilesize;
+
+    /* 3. get memory pointer */
+
+    char* tp = NULL;
+
+    if (_rio_get_memory_pointer(shmFile, &tp, shmFilesize) == -1) {
+        return -1;
+    }
+
+    *ptr = tp;
+
+    return 0;
+
+}
+
+int rio_alloc_add(rio_profile_t profile, uint32_t size, char** ptr, uint32_t* offset) {
 
     int retVal = 0;
 
@@ -456,38 +486,7 @@ exit:
 
 }
 
-int rio_memory_get(rio_profile_t profile, char** ptr, size_t* size) {
-
-    /* 1. get filesize of shm */
-
-    char shmFile[255];
-    sprintf(shmFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_SHM_FILE);
-
-    /* 2. get filesize */
-
-    size_t shmFilesize = 0;
-
-    if (_rio_get_filesize(shmFile, &shmFilesize) == -1) {
-        return -1;
-    }
-
-    *size = shmFilesize;
-
-    /* 3. get memory pointer */
-
-    char* tp = NULL;
-
-    if (_rio_get_memory_pointer(shmFile, &tp, shmFilesize) == -1) {
-        return -1;
-    }
-
-    *ptr = tp;
-
-    return 0;
-
-}
-
-int rio_memory_free(rio_profile_t profile, uint32_t offset) {
+int rio_alloc_rm(rio_profile_t profile, uint32_t offset) {
 
     int retVal = 0;
 
@@ -573,7 +572,7 @@ exit:
 
 }
 
-int rio_memory_freeall(rio_profile_t profile) {
+int rio_alloc_rmall(rio_profile_t profile) {
 
     int retVal = 0;
 
@@ -592,6 +591,104 @@ int rio_memory_freeall(rio_profile_t profile) {
     }
 
     fclose(fp);
+    return retVal;
+
+}
+
+int rio_alloc_count(rio_profile_t profile, unsigned int* memoryCount) {
+
+    int retVal = 0;
+
+    if (memoryCount == NULL) {
+        retVal = -1;
+        goto exit;
+    }
+
+    unsigned int retCntr = 0;
+
+    /* 1. get filesize of shm */
+
+    char linkFile[255];
+
+    sprintf(linkFile, "%s/%s/alloc", RIO_ROOT_PATH, profile);
+
+    /* 2. open file located on /var/www/rikerio/{id}/links/{key} */
+
+    FILE* fp = fopen(linkFile, "r");
+
+    if (!fp) {
+        retVal = 0;
+        *memoryCount = 0;
+        goto exit;
+    }
+
+    int fd = fileno(fp);
+
+    if (_rio_file_lock(fd) == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+    if (_rio_memory_count(fp, &retCntr) == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+    /* 3. read allocations */
+
+    *memoryCount = retCntr;
+
+releaseFile:
+
+    _rio_file_unlock(fd);
+    fclose(fp);
+
+exit:
+
+    return retVal;
+
+}
+
+int rio_alloc_get(rio_profile_t profile, rio_alloc_entry_t list[]) {
+
+    int retVal = 0;
+
+    /* 1. get filesize of shm */
+
+    char allocFile[255];
+
+    sprintf(allocFile, "%s/%s/alloc", RIO_ROOT_PATH, profile);
+
+    /* 2. open file located on /var/www/rikerio/{id}/links/{key} */
+
+    FILE* fp = fopen(allocFile, "r");
+
+    if (!fp) {
+        retVal = 0;
+        goto exit;
+    }
+
+    int fd = fileno(fp);
+
+    if (_rio_file_lock(fd) == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+    /* 3. read allocations */
+
+    if (_rio_memory_parse(fp, list) == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+releaseFile:
+
+    _rio_file_unlock(fd);
+    fclose(fp);
+
+exit:
+
     return retVal;
 
 }
