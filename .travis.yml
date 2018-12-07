@@ -9,6 +9,7 @@ matrix:
   include:
     # works on Precise and Trusty
     - os: linux
+      dist: xenial
       addons:
         apt:
           sources:
@@ -19,6 +20,7 @@ matrix:
          - MATRIX_EVAL="CC=gcc-4.9 && CXX=g++-4.9" SYSD=-DWITH_SYSTEMD=OFF
 
     - os: linux
+      dist: xenial
       addons:
         apt:
           sources:
