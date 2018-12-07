@@ -78,7 +78,7 @@ matrix:
           packages:
             - g++-7
       env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7" SYSD=-DWITH_SYSTEMD=ON
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7" SYSD=-DWITH_SYSTEMD=OFF
 
     - os: linux
       addons:
@@ -88,11 +88,11 @@ matrix:
           packages:
             - g++-7
       env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7" SYSD=-DWITH_SYSTEMD=OFF
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7" SYSD=-DWITH_SYSTEMD=ON
 
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -y lib-systemd0 libsystemd-daemon-dev
+  - sudo apt-get install -y libsystemd-dev libsystemd-daemon-dev
 before_script:
   - pwd
   - mkdir build
