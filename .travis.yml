@@ -7,7 +7,6 @@ compiler:
 before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y libsystemd-daemon-dev
-#  - "cd /usr/src/gtest && sudo cmake . && sudo cmake --build . && sudo mv libg* /usr/local/lib/ ; cd -"
 before_script:
   - pwd
   - mkdir build
@@ -15,4 +14,4 @@ before_script:
   - cmake -DCMAKE_BUILD_TYPE=Release ..
   - make
   - cd ..
-script: "sh ./.travis-build.sh"
+script: "sudo sh ./.travis-build.sh"

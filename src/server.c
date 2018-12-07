@@ -418,6 +418,7 @@ int main(int argc, char** argv) {
         tearDown(EXIT_FAILURE);
     }
 
+    signal(SIGTERM, tearDown);
     signal(SIGINT, tearDown);
 
 #ifdef WITH_SYSTEMD
