@@ -1174,8 +1174,12 @@ int rio_alias_link_rm(rio_profile_t profile, rio_alias_t alias, rio_link_t link)
     if (found && curSize > 0) {
         fseek(fp, 0, SEEK_SET);
         fprintf(fp, "%s", buffer);
-        ftruncate(fd, curSize);
         free(buffer);
+
+        if (ftruncate(fd, curSize) == -1) {
+            goto exit;
+        }
+
     }
 
     if (found && curSize == 0) {

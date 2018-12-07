@@ -79,27 +79,32 @@ install (TARGETS rikerio-bin RUNTIME DESTINATION sbin)
 
 add_library(rikerio-lib SHARED ${SRC}/rikerio.c)
 set_target_properties(rikerio-lib PROPERTIES OUTPUT_NAME rikerio)
+set_property(TARGET rikerio-lib PROPERTY C_STANDARD 99)
 target_include_directories(rikerio-lib PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 target_link_libraries(rikerio-lib rt)
 install (TARGETS rikerio-lib LIBRARY DESTINATION lib)
 
 add_executable(rikerio-test ${SRC}/test.c)
 set_target_properties(rikerio-test PROPERTIES OUTPUT_NAME test)
+set_property(TARGET rikerio-test PROPERTY C_STANDARD 99)
 target_include_directories(rikerio-test PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 target_link_libraries(rikerio-test systemd rt rikerio-lib)
 
 add_executable(rio-alias-add ${SRC}/add-alias.c)
 set_target_properties(rio-alias-add PROPERTIES OUTPUT_NAME rio-alias-add)
+set_property(TARGET rio-alias-add PROPERTY C_STANDARD 99)
 target_include_directories(rio-alias-add PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 target_link_libraries(rio-alias-add rt rikerio-lib)
 
 add_executable(rio-alias-rm ${SRC}/rm-alias.c)
 set_target_properties(rio-alias-rm PROPERTIES OUTPUT_NAME rio-alias-rm)
+set_property(TARGET rio-alias-rm PROPERTY C_STANDARD 99)
 target_include_directories(rio-alias-rm PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 target_link_libraries(rio-alias-rm rt rikerio-lib)
 
 add_executable(rio-alias-ls ${SRC}/list-alias.c)
 set_target_properties(rio-alias-ls PROPERTIES OUTPUT_NAME rio-alias-ls)
+set_property(TARGET rio-alias-ls PROPERTY C_STANDARD 99)
 target_include_directories(rio-alias-ls PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 target_link_libraries(rio-alias-ls rt rikerio-lib)
 
