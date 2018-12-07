@@ -4,7 +4,7 @@ language: c
 # Compiler selection
 compiler:
     - gcc
-#before_install:
+before_install:
   - sudo apt-get -qq update
   - sudo apt-get install -y libsystemd-dev
 #  - "cd /usr/src/gtest && sudo cmake . && sudo cmake --build . && sudo mv libg* /usr/local/lib/ ; cd -"
