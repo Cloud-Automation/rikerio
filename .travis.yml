@@ -5,14 +5,14 @@ language: c
 compiler:
     - gcc
 #before_install:
-#  - sudo apt-get -qq update
-#  - sudo apt-get install -y libgtest-dev
+  - sudo apt-get -qq update
+  - sudo apt-get install -y libsystemd-dev
 #  - "cd /usr/src/gtest && sudo cmake . && sudo cmake --build . && sudo mv libg* /usr/local/lib/ ; cd -"
 before_script:
-    - pwd
-    - mkdir build
-    - cd build
-    - cmake -DCMAKE_BUILD_TYPE=Release ..
-    - make
-    - cd ..
+  - pwd
+  - mkdir build
+  - cd build
+  - cmake -DCMAKE_BUILD_TYPE=Release ..
+  - make
+  - cd ..
 script: "sh ./.travis-build.sh"
