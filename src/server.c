@@ -15,8 +15,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
-#include <systemd/sd-daemon.h>
 #include "version.h"
+
+#ifdef WITH_SYSTEMD
+#include <systemd/sd-daemon.h>
+#endif
+
 
 static struct option long_options[] = {
     { "size", required_argument, NULL, 's' },
@@ -416,7 +420,9 @@ int main(int argc, char** argv) {
 
     signal(SIGINT, tearDown);
 
+#ifdef WITH_SYSTEMD
     sd_notify(0, "READY=1");
+#endif
 
     runtime.running = 1;
 
