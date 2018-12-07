@@ -92,7 +92,7 @@ matrix:
 
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -y systemd libsystemd-daemon-dev
+  - sudo apt-get install -y lib-systemd0 libsystemd-daemon-dev
 before_script:
   - pwd
   - mkdir build
