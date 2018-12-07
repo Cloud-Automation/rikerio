@@ -35,7 +35,7 @@ int main() {
 
         for (unsigned int i = 0; i < profileCount; i += 1) {
 
-            printf("  %s\n", profiles[i]);
+            printf("- %s\n", profiles[i]);
 
         }
 

@@ -278,9 +278,16 @@ int rio_profile_count(unsigned int* count) {
 
     struct dirent* entry;
     while ((entry = readdir(dirp)) != NULL) {
-        if (entry->d_type == DT_DIR) {
-            fcount++;
+
+        if (strcmp(entry->d_name, ".") == 0) {
+            continue;
         }
+
+        if (strcmp(entry->d_name, "..") == 0) {
+            continue;
+        }
+
+        fcount++;
     }
 
     *count = fcount;
@@ -321,9 +328,10 @@ int rio_profile_get(rio_profile_t list[]) {
             continue;
         }
 
-        memset(&(*list)[cntr-1], 0, sizeof(rio_profile_t));
+        memset(&list[cntr], 0, sizeof(rio_profile_t));
+        memcpy(&list[cntr], ent->d_name, strlen(ent->d_name));
 
-        memcpy(&(*list)[cntr-1], ent->d_name, strlen(ent->d_name));
+        cntr++;
 
     }
 
