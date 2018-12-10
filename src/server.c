@@ -285,6 +285,7 @@ void tearDown(int exitCode) {
 }
 
 int main(int argc, char** argv) {
+
     int pa = parseArguments(argc, argv);
 
     if (pa == -1) {

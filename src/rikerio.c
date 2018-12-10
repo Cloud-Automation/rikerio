@@ -1344,13 +1344,19 @@ exit:
 
 }
 
-int rio_sem_get(rio_profile_t profile, key_t* key) {
+int rio_sem_get(rio_profile_t profile, int* semId) {
+
+    if (!semId) {
+        return -1;
+    }
 
     /* 1. get filesize of shm */
 
     char shmKeyFile[255];
 
     sprintf(shmKeyFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_SEM_FILE);
+
+    key_t key = { 0 };
 
     /* 2. open and read file */
 
@@ -1360,12 +1366,14 @@ int rio_sem_get(rio_profile_t profile, key_t* key) {
         return -1;
     }
 
-    int rret = fread(key, sizeof(key_t), 1, fp);
+    int rret = fread(&key, sizeof(key_t), 1, fp);
 
     if (rret != 1) {
         fclose(fp);
         return -1;
     }
+
+    *semId = semget(key, 0, 0);
 
     fclose(fp);
 

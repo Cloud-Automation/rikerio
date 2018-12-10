@@ -216,11 +216,11 @@ int rio_alias_adr_get(rio_profile_t, rio_alias_t, rio_adr_t[]);
 
 /**
  * @brief get semaphore key.
- * @param char* profileId
- * @param key_t* key
+ * @param char* profile
+ * @param int* semaphore Id
  * @returns -1 on error, 0 on success
  */
-int rio_sem_get(rio_profile_t, key_t*);
+int rio_sem_get(rio_profile_t, int*);
 
 /**
  * @brief lock semaphore
