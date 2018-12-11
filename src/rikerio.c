@@ -219,6 +219,7 @@ static int _rio_memory_write(FILE* fp, rio_alloc_entry_t* list, unsigned int cnt
     int fd = fileno(fp);
 
     lseek(fd, 0, SEEK_SET);
+    ftruncate(fd, 0);
 
     for (unsigned int i = 0; i < cntr; i += 1) {
 
