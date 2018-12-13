@@ -219,7 +219,9 @@ static int _rio_memory_write(FILE* fp, rio_alloc_entry_t* list, unsigned int cnt
     int fd = fileno(fp);
 
     lseek(fd, 0, SEEK_SET);
-    ftruncate(fd, 0);
+    if (ftruncate(fd, 0) == -1) {
+        return -1;
+    }
 
     for (unsigned int i = 0; i < cntr; i += 1) {
 
@@ -487,7 +489,6 @@ releaseFile:
 
     _rio_file_unlock(fd);
     fclose(fp);
-
 
 exit:
 
@@ -1175,28 +1176,28 @@ int rio_alias_link_rm(rio_profile_t profile, rio_alias_t alias, rio_link_t link)
     }
 
     if (!found) {
-        retVal = 0;
-        free(buffer);
-        goto exit;
+        goto release;
     }
 
     if (found && curSize > 0) {
         fseek(fp, 0, SEEK_SET);
-        fprintf(fp, "%s", buffer);
-        free(buffer);
 
         if (ftruncate(fd, curSize) == -1) {
-            goto exit;
+            goto release;
         }
+
+        fprintf(fp, "%s", buffer);
 
     }
 
     if (found && curSize == 0) {
         unlink(linkFile);
-        free(buffer);
-        goto exit;
+        goto release;
     }
 
+
+release:
+    free(buffer);
 
     /* 4. close and unlock file */
 

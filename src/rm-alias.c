@@ -105,7 +105,7 @@ int main(int argc, char** argv) {
 
     for (unsigned int index = 0; index < keyCount; index += 1) {
         if (rio_alias_link_rm(profile, alias, keys[index]) == -1) {
-            fprintf(stderr, "Error adding alias (%s).\n", strerror(errno));
+            fprintf(stderr, "Error removing link from alias (%s).\n", strerror(errno));
             retVal = EXIT_FAILURE;
             goto exit;
         }
