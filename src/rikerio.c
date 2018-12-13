@@ -1133,14 +1133,14 @@ int rio_alias_link_rm(rio_profile_t profile, rio_alias_t alias, rio_link_t link)
 
     /* 1. try to open and lock file RIO_PERS_PATH/{profile}/alias/{alias} */
 
-    char linkFile[255];
+    char linkFile[255] = { };
 
     sprintf(linkFile, "%s/%s/alias/%s", RIO_PERS_PATH, profile, alias);
 
     FILE* fp = fopen(linkFile, "r+");
 
-    if (!fp) {
-        return -1;
+    if (fp == NULL) {
+        return 0;
     }
 
     int fd = fileno(fp);
@@ -1172,6 +1172,7 @@ int rio_alias_link_rm(rio_profile_t profile, rio_alias_t alias, rio_link_t link)
     }
 
     if (link == NULL) {
+        curSize = 0;
         found = 1;
     }
 
@@ -1181,13 +1182,11 @@ int rio_alias_link_rm(rio_profile_t profile, rio_alias_t alias, rio_link_t link)
 
     if (found && curSize > 0) {
         fseek(fp, 0, SEEK_SET);
-
         if (ftruncate(fd, curSize) == -1) {
+            retVal = -1;
             goto release;
         }
-
         fprintf(fp, "%s", buffer);
-
     }
 
     if (found && curSize == 0) {
@@ -1195,11 +1194,9 @@ int rio_alias_link_rm(rio_profile_t profile, rio_alias_t alias, rio_link_t link)
         goto release;
     }
 
-
 release:
-    free(buffer);
 
-    /* 4. close and unlock file */
+    free(buffer);
 
 exit:
 
