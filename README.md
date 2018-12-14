@@ -2,6 +2,8 @@
 
 RikerIO is a small framework that helps connecting IO Systems like General Purpose IOs or Bussystems easily with your application task.
 
+![RikerIO Sketch](doc/sketch.png)
+
 ## Platform
 
 RikerIO is developed to be used with any modern linux based Operating System.
