@@ -113,18 +113,24 @@ static int _rio_memory_count(FILE* fp, unsigned int* count) {
 
 }
 
-static int _rio_memory_parse(FILE* fp, rio_alloc_entry_t list[]) {
+static int _rio_memory_parse(FILE* fp, rio_alloc_entry_t list[], unsigned int listSize, unsigned int* retSize) {
 
     char* line = NULL;
     size_t len = 0;
     ssize_t read;
-    int cntr = 0;
+    unsigned int cntr = 0;
 
     if (fseek(fp, 0, SEEK_SET) != 0) {
         return -1;
     }
 
     while ((read = getline(&line, &len, fp)) != -1) {
+
+        if (cntr > listSize) {
+            free(line);
+            break;
+        }
+
 
         char** strList = NULL;
         int ret = 0;
@@ -157,6 +163,8 @@ static int _rio_memory_parse(FILE* fp, rio_alloc_entry_t list[]) {
 
     free(line);
 
+    *retSize = cntr;
+
     return cntr;
 
 }
@@ -167,18 +175,23 @@ static int _rio_adr_count(FILE* fp, unsigned int* count) {
 
 }
 
-static int _rio_adr_parse(FILE* fp, rio_adr_t list[]) {
+static int _rio_adr_parse(FILE* fp, rio_adr_t list[], unsigned int listSize, unsigned int* retSize) {
 
     char* line = NULL;
     size_t len = 0;
     ssize_t read;
-    int cntr = 0;
+    unsigned int cntr = 0;
 
     if (fseek(fp, 0, SEEK_SET) != 0) {
         return -1;
     }
 
     while ((read = getline(&line, &len, fp)) != -1) {
+
+        if (cntr > listSize) {
+            free(line);
+            break;
+        }
 
         char** strList = NULL;
         int ret = 0;
@@ -208,6 +221,8 @@ static int _rio_adr_parse(FILE* fp, rio_adr_t list[]) {
     }
 
     free(line);
+
+    *retSize = cntr;
 
     return cntr;
 
@@ -301,7 +316,7 @@ int rio_profile_count(unsigned int* count) {
 
 }
 
-int rio_profile_get(rio_profile_t list[]) {
+int rio_profile_get(rio_profile_t list[], unsigned int listSize, unsigned int* retSize) {
 
     /* create link folder */
 
@@ -318,7 +333,7 @@ int rio_profile_get(rio_profile_t list[]) {
 
     /* read dir content */
 
-    int cntr = 0;
+    unsigned int cntr = 0;
     struct dirent *ent;
 
     while ((ent = readdir (dir)) != NULL) {
@@ -331,6 +346,10 @@ int rio_profile_get(rio_profile_t list[]) {
             continue;
         }
 
+        if (cntr > listSize) {
+            break;
+        }
+
         memset(&list[cntr], 0, sizeof(rio_profile_t));
         memcpy(&list[cntr], ent->d_name, strlen(ent->d_name));
 
@@ -339,6 +358,8 @@ int rio_profile_get(rio_profile_t list[]) {
     }
 
     closedir (dir);
+
+    *retSize = cntr;
 
     return cntr;
 
@@ -431,7 +452,9 @@ int rio_alloc_add(rio_profile_t profile, uint32_t size, char** ptr, uint32_t* of
     rio_alloc_entry_t* curList = calloc(allocCount, sizeof(rio_alloc_entry_t));
     rio_alloc_entry_t* newList = calloc(1, (allocCount + 1) * sizeof(rio_alloc_entry_t));
 
-    if (_rio_memory_parse(fp, curList) == -1) {
+    unsigned int retSize = 0;
+
+    if (_rio_memory_parse(fp, curList, allocCount, &retSize) == -1) {
         retVal = -1;
         goto release;
     }
@@ -534,7 +557,9 @@ int rio_alloc_rm(rio_profile_t profile, uint32_t offset) {
     rio_alloc_entry_t* curList = calloc(allocCount, sizeof(rio_alloc_entry_t));
     rio_alloc_entry_t* newList = calloc(allocCount - 1, sizeof(rio_alloc_entry_t));
 
-    if (_rio_memory_parse(fp, curList) == -1) {
+    unsigned int retSize = 0;
+
+    if (_rio_memory_parse(fp, curList, allocCount, &retSize) == -1) {
         retVal = -1;
         goto release;
     }
@@ -659,7 +684,7 @@ exit:
 
 }
 
-int rio_alloc_get(rio_profile_t profile, rio_alloc_entry_t list[]) {
+int rio_alloc_get(rio_profile_t profile, rio_alloc_entry_t list[], unsigned int listSize, unsigned int* retSize) {
 
     int retVal = 0;
 
@@ -687,7 +712,7 @@ int rio_alloc_get(rio_profile_t profile, rio_alloc_entry_t list[]) {
 
     /* 3. read allocations */
 
-    if (_rio_memory_parse(fp, list) == -1) {
+    if (_rio_memory_parse(fp, list, listSize, retSize) == -1) {
         retVal = -1;
         goto releaseFile;
     }
@@ -759,7 +784,9 @@ int rio_link_adr_add(rio_profile_t profile, rio_link_t key, rio_adr_t adr) {
 
     rio_adr_t* curList = calloc(adrCount, sizeof(rio_adr_t));
 
-    if (_rio_adr_parse(fp, curList) == -1) {
+    unsigned int retSize = 0;
+
+    if (_rio_adr_parse(fp, curList, adrCount, &retSize) == -1) {
         retVal = -1;
         goto release;
     }
@@ -860,7 +887,7 @@ exit:
 
 }
 
-int rio_link_adr_get(rio_profile_t profile, rio_link_t key, rio_adr_t adr[]) {
+int rio_link_adr_get(rio_profile_t profile, rio_link_t key, rio_adr_t adr[], unsigned int listSize, unsigned int* retSize) {
 
     int retVal = 0;
 
@@ -888,7 +915,7 @@ int rio_link_adr_get(rio_profile_t profile, rio_link_t key, rio_adr_t adr[]) {
 
     /* 3. read allocations */
 
-    if (_rio_adr_parse(fp, adr) == -1) {
+    if (_rio_adr_parse(fp, adr, listSize, retSize) == -1) {
         retVal = -1;
         goto releaseFile;
     }
@@ -955,7 +982,7 @@ exit:
 
 }
 
-int rio_link_get(rio_profile_t profile, rio_link_t list[]) {
+int rio_link_get(rio_profile_t profile, rio_link_t list[], unsigned int listSize, unsigned int* retSize) {
 
     char linksFolder[255];
 
@@ -970,7 +997,7 @@ int rio_link_get(rio_profile_t profile, rio_link_t list[]) {
 
     /* read dir content */
 
-    int cntr = 0;
+    unsigned int cntr = 0;
     struct dirent *ent;
 
     while ((ent = readdir (dir)) != NULL) {
@@ -983,6 +1010,10 @@ int rio_link_get(rio_profile_t profile, rio_link_t list[]) {
             continue;
         }
 
+        if (cntr > listSize) {
+            break;
+        }
+
         memcpy(&list[cntr], ent->d_name, strlen(ent->d_name));
 
         cntr += 1;
@@ -990,6 +1021,8 @@ int rio_link_get(rio_profile_t profile, rio_link_t list[]) {
     }
 
     closedir (dir);
+
+    *retSize = cntr;
 
     return 0;
 
@@ -1271,7 +1304,7 @@ exit:
 
 }
 
-int rio_alias_adr_get(rio_profile_t profile, rio_alias_t alias, rio_adr_t list[]) {
+int rio_alias_adr_get(rio_profile_t profile, rio_alias_t alias, rio_adr_t list[], unsigned int listSize, unsigned int* retSize) {
 
     if (alias == NULL || list == NULL) {
         return -1;
@@ -1318,16 +1351,26 @@ int rio_alias_adr_get(rio_profile_t profile, rio_alias_t alias, rio_adr_t list[]
 
         rio_adr_t* adrList = calloc(cnt, sizeof(rio_adr_t));
 
-        if (rio_link_adr_get(profile, key, adrList) == -1) {
+        unsigned int retSize = 0;
+
+        if (rio_link_adr_get(profile, key, adrList, cnt, &retSize) == -1) {
             continue;
         }
 
         for (unsigned int i = 0; i < cnt; i += 1) {
+            if (index > listSize) {
+                break;
+            }
             memcpy(&list[index++], &adrList[i], sizeof(rio_adr_t));
+        }
+
+        if (index > listSize) {
+            break;
         }
 
     }
 
+    *retSize = index;
 
 
 releaseFile:
@@ -1404,65 +1447,4 @@ int rio_sem_unlock(int semId) {
     }
 
     return 1;
-}
-
-int rio_lock(rio_profile_t profile, int* handle) {
-
-
-    int retVal = 0;
-
-    if (handle == NULL) {
-        retVal = -1;
-        goto exit;
-    }
-
-    /* 1. try to open and lock file RIO_ROOT_PATH/{profile}/sync */
-
-    char linkFile[255];
-
-    sprintf(linkFile, "%s/%s/sync", RIO_ROOT_PATH, profile);
-
-    FILE* fp = fopen(linkFile, "r");
-
-    if (!fp) {
-        retVal = -1;
-        goto exit;
-    }
-
-    int fd = fileno(fp);
-
-    if (_rio_file_lock(fd) == -1) {
-        retVal = -1;
-        goto releaseFile;
-    }
-
-    *handle = fd;
-
-    goto exit;
-
-releaseFile:
-
-    fclose(fp);
-
-exit:
-
-    return retVal;
-
-}
-
-int rio_unlock(int handle) {
-
-    int retVal = 0;
-
-    if (_rio_file_lock(handle) == -1) {
-        retVal = -1;
-        goto exit;
-    }
-
-    close(handle);
-
-exit:
-    return retVal;
-
-
 }

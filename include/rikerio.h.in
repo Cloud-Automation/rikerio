@@ -54,9 +54,11 @@ int rio_profile_count(unsigned int*);
 /**
  * @brief get available memory profiles
  * @param rio_profile_t* return list
+ * @param unsigned int preallocated item count
+ * @param unsigned int* items copied into the profile list.
  * @returns number of profiles found, -1 on failure
  */
-int rio_profile_get(rio_profile_t[]);
+int rio_profile_get(rio_profile_t[], unsigned int, unsigned int*);
 
 /**
  * @brief receive memory pointer and memory size
@@ -104,11 +106,13 @@ int rio_alloc_count(rio_profile_t, unsigned int*);
 
 /**
  * @brief List all allocations
- * @param char* profile
+ * @param rio_profile_t profile
  * @param rio_alloc_entry_t[] List of allocations
+ * @param unsigned int count of preallocated list items
+ * @param unsigned int* number of items copied to the list
  * @returns 0 on success, -1 on error
  */
-int rio_alloc_get(rio_profile_t, rio_alloc_entry_t[]);
+int rio_alloc_get(rio_profile_t, rio_alloc_entry_t[], unsigned int, unsigned int*);
 
 /**
  * @brief Add new link address
@@ -134,9 +138,11 @@ int rio_link_adr_count(rio_profile_t, rio_link_t, unsigned int*);
  * @param rio_profile_t profile
  * @param rio_link_t link
  * @param rio_adr_t[] address list
+ * @param unsigned int number of list items in the preallocated list
+ * @param unsigned int* number of items copied to the list
  * @returns 0 on success or -1 on error
  */
-int rio_link_adr_get(rio_profile_t, rio_link_t, rio_adr_t[]);
+int rio_link_adr_get(rio_profile_t, rio_link_t, rio_adr_t[], unsigned int, unsigned int*);
 
 /**
  * @brief Remove adr from link
@@ -159,9 +165,11 @@ int rio_link_count(rio_profile_t, unsigned int*);
  * @brief get list of links
  * @param char* profileId
  * @param rio_link_t[] return list of links
+ * @param unsigned int number of preallocated items in the list
+ * @param unsigned int* number of items copied to the list
  * @return 0 on success, -1 on error
  */
-int rio_link_get(rio_profile_t, rio_link_t[]);
+int rio_link_get(rio_profile_t, rio_link_t[], unsigned int, unsigned int*);
 
 /**
  * @brief remove all addresses in the link
@@ -210,9 +218,11 @@ int rio_alias_adr_count(rio_profile_t, rio_alias_t, unsigned int*);
  * @param rio_profile_t profileId
  * @param rio_alias_t alias
  * @param rio_adr_t[]
+ * @param unsigned int number of preallocated items
+ * @param unsigned int* number of items copied to the list
  * @returns 0 on success, -1 on error
  */
-int rio_alias_adr_get(rio_profile_t, rio_alias_t, rio_adr_t[]);
+int rio_alias_adr_get(rio_profile_t, rio_alias_t, rio_adr_t[], unsigned int, unsigned int*);
 
 /**
  * @brief get semaphore key.
@@ -233,21 +243,6 @@ int rio_sem_lock(int);
  * @param int semaphore id
  */
 int rio_sem_unlock(int);
-
-/**
- * @brief sync lock for link and alias operations
- * @param rio_profile_t profile
- * @param int* handle to be passed to rio_unlock
- * @returns 0 on success, -1 on error
- */
-int rio_lock(rio_profile_t, int*);
-
-/**
- * @brief sync unlock for link and alias operations
- * @param int handle handle created by rio_lock
- * @returns 0 on success, -1 on error
- */
-int rio_unlock(int);
 
 #ifdef __cplusplus
 }

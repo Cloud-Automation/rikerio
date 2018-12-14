@@ -22,14 +22,17 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    rio_profile_t* profiles = calloc(1, sizeof(rio_profile_t) * profileCount);
+    rio_profile_t* profiles = calloc(profileCount, sizeof(rio_profile_t));
 
-    retVal = rio_profile_get(profiles);
+    unsigned int retSize = 0;
+
+    retVal = rio_profile_get(profiles, profileCount, &retSize);
 
     if (-1 == retVal) {
         printf("failed (%s)!\n", strerror(errno));
         return EXIT_FAILURE;
     } else {
+
 
         printf("successfull!\n");
 
@@ -68,7 +71,9 @@ int main() {
 
     rio_link_t* linkList = calloc(linkCount, sizeof(rio_link_t));
 
-    int retListLinks = rio_link_get(PROFILE, linkList);
+    retSize = 0;
+
+    int retListLinks = rio_link_get(PROFILE, linkList, linkCount, &retSize);
 
     if (retListLinks == -1) {
         printf("failed.\n");
@@ -117,7 +122,7 @@ int main() {
 
         rio_adr_t* adrList = calloc(linkCount, sizeof(rio_adr_t));
 
-        if (rio_link_adr_get(PROFILE, link, adrList) == -1) {
+        if (rio_link_adr_get(PROFILE, link, adrList, linkCount, &retSize) == -1) {
 
             printf("failed\n");
             return -1;

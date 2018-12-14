@@ -83,12 +83,6 @@ In that case the RikerIO Server notifies SystemD when it is ready. Make sure to 
 
 Most of the operations happening on a profile can only be done through the RikerIO Library. Only operations on the alias can also be performed by a user via a command line interface.
 
-The general pattern for receiving a list of objects is as follows:
-
-1. lock profile
-2. rio_object_count
-3. rio_object_get
-4. unlock profile
 
 ### Profiles
 
@@ -118,11 +112,13 @@ printf("%d\n", profileCount);
 
 **Signature**
 ```
-int rio_profile_get(rio_profile_t[] profileList)`
+int rio_profile_get(rio_profile_t[] profileList, unsigned int listSize, unsigned int* retSize)`
 ```
 
 **Arguments and Return Value**
 - **profileList** Preallocated list of profiles, will be filled by the lib.
+- **listSize** Item count of the preallocated list.
+- **retSize** Actual count of items copied to the list.
 - **returns** Zero on success, -1 on failure.
 
 **Example**
@@ -135,12 +131,13 @@ if (rio_profile_count(&profileCount) == -1) {
 
 rio_profile_t* list = calloc(profileCount, sizeof(rio_profile_t));
 
-if (rio_profile_get(list) == -1) {
+unsigned int retSize = 0;
+if (rio_profile_get(list, profileCount, &retSize) == -1) {
   free(list);
   exit(EXIT_FAILURE);
 }
 
-for (unsigned int i = 0; i < profileCount; i += 1) {
+for (unsigned int i = 0; i < retSize; i += 1) {
   printf("%s\n", list[i]);
 }
 free(list);
@@ -240,20 +237,22 @@ printf("%d\n", allocCount);
 
 **Signature**
 ```
-int rio_alloc_get(rio_profile_t profile, rio_alloc_entry_t list[])
+int rio_alloc_get(
+  rio_profile_t profile,
+  rio_alloc_entry_t list[],
+  unsigned int listSize,
+  unsigned int* retSize)
 ```
 
 **Arguments and Return Value**
 - **profile** Profile ID
 - **list** Preallocated List of Allocations.
+- **listSize** Item count for the preallocated list.
+- **retSize** List size of actual list size filled by the library.
 - **returns** Zero on success, -1 on failure
 
 **Example**
 ```
-int lock = 0;
-if (rio_lock("default", &lock) == -1) {
-  exit(EXIT_FAILURE);
-}
 
 unsigned int allocCount = 0;
 if (rio_alloc_count("default", &allocCount == -1) {
@@ -261,19 +260,17 @@ if (rio_alloc_count("default", &allocCount == -1) {
 }
 
 rio_alloc_entry_t list[] = calloc(allocCount, sizeof(rio_alloc_entry));
-if (rio_alloc_get("default", list) == -1) {
+unsigned int retSize = 0;
+if (rio_alloc_get("default", list, allocCount, &retSize) == -1) {
   free(list);
   exit(EXIT_FAILURE);
 }
 
-for (unsigned int i = 0; i < allocCount; i += 1) {
+for (unsigned int i = 0; i < retSize; i += 1) {
   printf("Offset %d, Size %d\n", list[i].offset, list[i].size);
 }
 free(list);
 
-if (rio_unlock(lock) == -1) {
-  exit(EXIT_FAILURE);
-}
 ```
 
 ### Links
@@ -334,43 +331,39 @@ printf("%d\n", adrCount);
 
 **Signature**
 ```
-int rio_link_adr_get(rio_profile_t profile, rio_link_t link, rio_adr_t[] adrList)
+int rio_link_adr_get(
+  rio_profile_t profile,
+  rio_link_t link,
+  rio_adr_t[] adrList,
+  unsigned int listSize,
+  unsigned int* retSize)
 ```
 
 **Arguments and Return Value**
 - **profile** Profile ID
 - **link** Linkname
 - **adrList** Preallocated List of Addresses to be filled by the Library.
+- **listSize** Item count for the preallocated list.
+- **retSize** actual Size of the copied list items.
 - **returns** Zero on success, -1 on failure.
 
 **Example**
 
 ```
 
-int lock = 0;
-if (rio_lock("default", &lock) == -1) {
-  exit(EXIT_FAILURE);
-}
-
 unsigned int adrCount = 0;
 if (rio_link_adr_count("default", "in.foo.bar", &adrCount) == -1) {
-  rio_unlock(lock);
   exit(EXIT_FAILURE);
 }
 
 rio_adr_t* adrList = calloc(adrCount, sizeof(rio_adr_t));
-
-if (rio_link_adr_get("default", "in.foo.bar", adrList) == -1) {
-  rio_unlock(lock);
+unsigned int retSize = 0;
+if (rio_link_adr_get("default", "in.foo.bar", adrList, adrCount, &retSize) == -1) {
   free(adrList);
   exit(EXIT_FAILURE);
 }
 
-if (rio_unlock(lock) == -1) {
-  exit(EXIT_FAILURE);
-}
-
-for (unsigned int i = 0; i < adrCount; i += 1) {
+for (unsigned int i = 0; i < retSize; i += 1) {
   printf("%s : %d.%d\n", "in.foo.bar", adrList[i].byteOffset, adrList[i].bitOffset);
 }
 
@@ -396,3 +389,55 @@ if (rio_link_adr_rm("default", "out.foo.bar", adr) == -1) {
   exit(EXIT_FAILURE);
 }
 ```
+
+#### Count Links in a Profile
+
+**Signature**
+```
+int rio_link_count(rio_profile_t profile, unsigned int* linkCount)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **linkCount** Point to a variable where the application can store the result.
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+```
+unsigned int linkCount = 0;
+if (rio_link_count("default", &linkCount) == -1) {
+  exit(EXIT_FAILURE);
+}
+printf("%d\n", linkCount);
+```
+
+#### Get Links in a Profile
+
+**Signature**
+```
+int rio_link_get(
+  rio_profile_t profile,
+  rio_link_t[] linkList,
+  unsigned int preAllocCount,
+  unsigned int* listCount)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **linkList** Preallocated List where the results will be stored in.
+- **preAllocCount** Number of preallocated list items.
+- **listCount** Number of links copied to the list.
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+
+```
+unsigned int fetchCount = 0;
+rio_link_t* linkList = calloc(100, sizeof(rio_link_t));
+if (rio_link_get("default", linkList, 100, &fetchCount) == -1) {
+  rio_unlock(lock);
+  exit(EXIT_FAILURE);
+}
+```
+
+####  
