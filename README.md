@@ -4,6 +4,13 @@ RikerIO is a small framework that helps connecting IO Systems like General Purpo
 
 ![RikerIO Sketch](doc/sketch.png)
 
+## Benefits
+
+- No need to implement the IO System into your Application.
+- Separate IO and Application.
+- Build Applications with a PDO interface nearly independet of the IO System.
+- Easily test and simulate your application.
+
 ## Platform
 
 RikerIO is developed to be used with any modern linux based Operating System.
@@ -265,6 +272,127 @@ for (unsigned int i = 0; i < allocCount; i += 1) {
 free(list);
 
 if (rio_unlock(lock) == -1) {
+  exit(EXIT_FAILURE);
+}
+```
+
+### Links
+
+#### Address
+
+```
+typedef struct __rio_adr_t {
+  uint32_t byteOffset;
+  uint8_t bitOffset;
+} rio_adr_t;
+```
+
+#### Add Address to a Link
+
+**Signature**
+```
+int rio_link_adr_add(rio_profile_t profile, rio_link_t link, rio_adr_t adr)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **link** Linkname
+- **adr** Address to be added to the link.
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+```
+rio_adr_t adr = { 10, 2 };
+if (rio_link_adr_add("default", "in.some.var", adr) == -1) {
+  exit(EXIT_FAILURE);
+}
+```
+
+#### Count Addresses associated with a Link
+
+**Signature**
+```
+int rio_link_adr_count(rio_profile_t profile, rio_link_t link, unsigned int* adrCount)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **link** Linkname
+- **adrCount** Pointer to Address Count result.
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+```
+unsigned int adrCount = 0;
+if (rio_link_adr_count("default", "out.another.var", &adrCount) == -1) {
+  exit(EXIT_FAILURE);
+}
+printf("%d\n", adrCount);
+```
+
+#### Get Address List from a Link
+
+**Signature**
+```
+int rio_link_adr_get(rio_profile_t profile, rio_link_t link, rio_adr_t[] adrList)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **link** Linkname
+- **adrList** Preallocated List of Addresses to be filled by the Library.
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+
+```
+
+int lock = 0;
+if (rio_lock("default", &lock) == -1) {
+  exit(EXIT_FAILURE);
+}
+
+unsigned int adrCount = 0;
+if (rio_link_adr_count("default", "in.foo.bar", &adrCount) == -1) {
+  rio_unlock(lock);
+  exit(EXIT_FAILURE);
+}
+
+rio_adr_t* adrList = calloc(adrCount, sizeof(rio_adr_t));
+
+if (rio_link_adr_get("default", "in.foo.bar", adrList) == -1) {
+  rio_unlock(lock);
+  free(adrList);
+  exit(EXIT_FAILURE);
+}
+
+if (rio_unlock(lock) == -1) {
+  exit(EXIT_FAILURE);
+}
+
+for (unsigned int i = 0; i < adrCount; i += 1) {
+  printf("%s : %d.%d\n", "in.foo.bar", adrList[i].byteOffset, adrList[i].bitOffset);
+}
+
+```
+
+#### Remove Address from a Link
+
+**Signature**
+```
+int rio_link_adr_rm(rio_profile_t profile, rio_link_t link, rio_adr_t adr)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **link** Linkname
+- **adr** Address to be removed from the link.
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+```
+rio_adr_t adr = { 10, 1 };
+if (rio_link_adr_rm("default", "out.foo.bar", adr) == -1) {
   exit(EXIT_FAILURE);
 }
 ```
