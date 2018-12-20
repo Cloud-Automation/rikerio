@@ -128,10 +128,10 @@ function _profileLs {
 }
 
 case $1 in
-  "server")
+  "profile")
     shift
     case $1 in
-      "start") shift; rio-server --id=${RIOPROFILE} ;;
+      "create") shift; rio-profile-create --id=${RIOPROFILE} ;;
     esac  
   ;;
   "profile")
@@ -157,7 +157,7 @@ case $1 in
     case $1 in
       "ls") shift; _aliasLs "$@" ;;
       "cat") shift; _aliasCat "$@" ;;
-      "inspect") shift; rio-alias-ls --id=${RIOPROFILE} $1 ;;
+      "inspect") shift; rio-alias-inspect --id=${RIOPROFILE} $1 ;;
       "rm") shift; _aliasRm "$@" ;;
       "add") shift; _aliasAdd "$@" ;;
       "help") _showAliasHelp ;;

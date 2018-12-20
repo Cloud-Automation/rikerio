@@ -39,15 +39,14 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/rikerio.h.in ${CMAKE_CURRENT_
 file(GLOB HEADERS ${INC}/*.h)
 file(GLOB SOURCES ${SRC}/*.c)
 
-add_executable(rikerio-bin ${SRC}/server.c)
-set_target_properties(rikerio-bin PROPERTIES OUTPUT_NAME rio-server)
-target_include_directories(rikerio-bin PUBLIC ${INC} ${PROJECT_BINARY_DIR})
+add_executable(rio-profile-create ${SRC}/server.c)
+target_include_directories(rio-profile-create PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 if(${WITH_SYSTEMD}) 
-  target_link_libraries(rikerio-bin systemd rt)
+  target_link_libraries(rio-profile-create systemd rt)
 else()
-  target_link_libraries(rikerio-bin rt)
+  target_link_libraries(rio-profile-create rt)
 endif()
-install (TARGETS rikerio-bin RUNTIME DESTINATION sbin)
+install (TARGETS rio-profile-create RUNTIME DESTINATION sbin)
 
 add_library(rikerio-lib SHARED ${SRC}/rikerio.c)
 set_target_properties(rikerio-lib PROPERTIES OUTPUT_NAME rikerio)
@@ -74,11 +73,11 @@ set_property(TARGET rio-alias-rm PROPERTY C_STANDARD 99)
 target_include_directories(rio-alias-rm PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 target_link_libraries(rio-alias-rm rt rikerio-lib)
 
-add_executable(rio-alias-ls ${SRC}/list-alias.c)
-set_target_properties(rio-alias-ls PROPERTIES OUTPUT_NAME rio-alias-ls)
-set_property(TARGET rio-alias-ls PROPERTY C_STANDARD 99)
-target_include_directories(rio-alias-ls PUBLIC ${INC} ${PROJECT_BINARY_DIR})
-target_link_libraries(rio-alias-ls rt rikerio-lib)
+add_executable(rio-alias-inspect ${SRC}/list-alias.c)
+set_target_properties(rio-alias-inspect PROPERTIES OUTPUT_NAME rio-alias-inspect)
+set_property(TARGET rio-alias-inspect PROPERTY C_STANDARD 99)
+target_include_directories(rio-alias-inspect PUBLIC ${INC} ${PROJECT_BINARY_DIR})
+target_link_libraries(rio-alias-inspect rt rikerio-lib)
 
 
 
