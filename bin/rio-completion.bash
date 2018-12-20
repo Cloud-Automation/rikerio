@@ -13,6 +13,7 @@ _rioSubCommands()
       profile=${RIO_PROFILE}
     fi
 
+    local profileIdx=0
     local aliasIdx=0
     local linkIdx=0
     local lsIdx=0
@@ -77,23 +78,23 @@ _rioSubCommands()
     link+=$catIdx
     link+=$linkFileIdx
 
-    local profile=""
-    profile+=$profileIdx
-    profile+=$lsIdx
-    profile+=$createIdx
+    local pro=""
+    pro+=$profileIdx
+    pro+=$lsIdx
+    pro+=$createIdx
 
     COMPREPLY=()
 
     # rio ?
-    if [ $alias -eq "00000000" ] || [ $link -eq "0000" ] || [ $profile -eq "000" ];
+    if [ $alias -eq "00000000" ] && [ $link -eq "0000" ] && [ $pro -eq "000" ];
     then
       local IFS=$' \t\n'
       local opts="profile link alias help version"
       COMPREPLY=($(compgen -W "$opts" -- ${cur}))
     fi
 
-    # rio profile
-    if [ $profile -eq "100" ];
+    # rio profile ?
+    if [ $pro -eq "100" ];
     then
       local IFS=$' \t\n'
       COMPREPLY=($(compgen -W "ls create help" -- ${cur}))

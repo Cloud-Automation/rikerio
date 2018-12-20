@@ -157,7 +157,7 @@ case $1 in
     case $1 in
       "ls") shift; _aliasLs "$@" ;;
       "cat") shift; _aliasCat "$@" ;;
-      "inspect") shift; echo rio-alias-ls --id=${RIOPROFILE} $1 ;;
+      "inspect") shift; rio-alias-ls --id=${RIOPROFILE} $1 ;;
       "rm") shift; _aliasRm "$@" ;;
       "add") shift; _aliasAdd "$@" ;;
       "help") _showAliasHelp ;;
