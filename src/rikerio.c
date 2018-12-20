@@ -1314,14 +1314,14 @@ int rio_alias_adr_get(rio_profile_t profile, rio_alias_t alias, rio_adr_t list[]
 
     /* 1. try to open and lock file RIO_PERS_PATH/{profile}/alias/{alias} */
 
-    char aliasFile[255];
+    char aliasFile[255] = { 0 };
 
     sprintf(aliasFile, "%s/%s/alias/%s", RIO_PERS_PATH, profile, alias);
 
     FILE* fp = fopen(aliasFile, "r+");
 
     if (!fp) {
-        retVal = 0;
+        retVal = -1;
         goto exit;
     }
 

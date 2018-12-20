@@ -20,7 +20,7 @@ static struct option long_options[] = {
 
 static void printHelp() {
 
-    printf("Usage: rio-alias-list OPTIONS alias\n\n");
+    printf("Usage: rio-alias-ls OPTIONS alias\n\n");
     printf("Options:\n");
     printf("\t-i|--id\t\tName of the memory profile.\n");
     printf("\t-v|--version\tPrint version.\n");

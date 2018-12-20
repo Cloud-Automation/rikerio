@@ -1,0 +1,169 @@
+#!/bin/bash
+
+# get rio profile from env RIO_PROFILE or use default
+
+if [ -z ${RIO_PROFILE} ]; 
+then
+  RIOPROFILE=default
+else
+  RIOPROFILE=${RIO_PROFILE}
+fi
+
+
+# remove options from argument list
+
+for o in "$@"
+do
+  shift
+  case $o in
+    -i=*|--id=*)
+      RIOPROFILE="${o#*=}"
+    ;;
+    *) 
+      set -- "$@" "$o"
+    ;;
+   esac
+done
+
+
+function _showHelp {
+    echo "Usage: rio <command>"
+    echo ""
+    echo "Options:"
+    echo "  --id=<id> -  Profile ID, default to default."
+    echo ""
+    echo "Commands:"
+    echo "  profile   -  Create a new profile."
+    echo "  link      -  List/Add/Remove Links."
+    echo "  alias     -  List/Add/Remove Alias."
+    echo "  version   -  Print out version."
+    echo ""
+    echo "Copyright Stefan Poeter<rikerio@cloud-automation.de>"
+    exit 0
+}
+
+function _showProfileHelp {
+    echo "Usage: rio profile <command>"
+    echo ""
+    echo "Command:"
+    echo "  ls        -  List all Profile."
+    echo "  create    -  Start a new profile."
+    echo ""
+    echo "Copyright Stefan Poeter<rikerio@cloud-automation.de>"
+    exit 0
+}
+
+
+function _showAliasHelp {
+    echo "Usage: rio alias <command> <alias> <link...>"
+    echo ""
+    echo "Options:"
+    echo "  --id=<id> -  Profile ID, default to default."
+    echo ""
+    echo "Command:"
+    echo "  ls        -  List all Aliases."
+    echo "  cat       -  List Links from a specific alias."
+    echo "  inspect   -  List Adresses from alias."
+    echo "  rm        -  Remove link from alias."
+    echo "  add       -  Add Link to Alias."
+    echo ""
+    echo "Copyright Stefan Poeter<rikerio@cloud-automation.de>"
+    exit 0
+}
+
+function _showLinkHelp {
+    echo "Usage: rio link <command>"
+    echo ""
+    echo "Options:"
+    echo "  --id=<id> -  Profile ID, default to default."
+    echo ""
+    echo "Command:"
+    echo "  ls        -  List Links."
+    echo "  inspect   -  List Link Adresses."
+    echo ""
+    echo "Copyright Stefan Poeter<rikerio@cloud-automation.de>"
+    exit 0
+}
+
+function _linkLs {
+  ls /var/run/rikerio/${RIOPROFILE}/links 2> /dev/null
+}
+
+function _linkCat {
+  cat /var/run/rikerio/${RIOPROFILE}/links/"$1" 2> /dev/null
+}
+
+function _aliasLs {
+  ls /var/run/rikerio/${RIOPROFILE}/alias 2> /dev/null
+}
+
+function _aliasCat {
+  cat /var/run/rikerio/${RIOPROFILE}/alias/"$1" 2>/dev/null
+}
+
+function _aliasRm {
+  aliasName=\"$1\"
+  shift
+  linkNames=""
+  for i in "$@"
+  do
+    linkNames+=\ \"${i}\"
+  done
+  rio-alias-rm --id=${RIOPROFILE} ${aliasName} ${linkNames} 
+}
+
+function _aliasAdd {
+  aliasName=\"$1\"
+  shift
+  linkNames=""
+  for i in "$@"
+  do
+    linkNames+=\ \"${i}\"
+  done
+  rio-alias-add --id=${RIOPROFILE} ${aliasName} ${linkNames} 
+}
+
+function _profileLs {
+  ls /var/run/rikerio 2> /dev/null
+}
+
+case $1 in
+  "server")
+    shift
+    case $1 in
+      "start") shift; rio-server --id=${RIOPROFILE} ;;
+    esac  
+  ;;
+  "profile")
+    shift
+    case $1 in
+      "ls") shift; _profileLs ;;
+      "create") shift; rio-server --id=${RIOPROFILE} ;;
+      "help") shift; _showProfileHelp ;;
+      *) shift; _showProfileHelp ;;
+    esac
+  ;;
+  "link")
+    shift
+    case $1 in
+      "ls") shift; _linkLs "$@" ;;
+      "cat") shift; _linkCat "$@" ;;
+      "help") _showLinkHelp ;;
+      *) _showLinkHelp ;;
+    esac
+  ;;
+  "alias")
+    shift
+    case $1 in
+      "ls") shift; _aliasLs "$@" ;;
+      "cat") shift; _aliasCat "$@" ;;
+      "inspect") shift; echo rio-alias-ls --id=${RIOPROFILE} $1 ;;
+      "rm") shift; _aliasRm "$@" ;;
+      "add") shift; _aliasAdd "$@" ;;
+      "help") _showAliasHelp ;;
+      *) _showAliasHelp ;;
+    esac
+  ;;
+  "help") _showHelp ;;
+  *) _showHelp ;;
+esac
