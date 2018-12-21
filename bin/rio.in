@@ -86,7 +86,7 @@ function _showLinkHelp {
 }
 
 function _linkLs {
-  ls /var/run/rikerio/${RIOPROFILE}/links 2> /dev/null
+  ls -N /var/run/rikerio/${RIOPROFILE}/links 2> /dev/null
 }
 
 function _linkCat {
@@ -94,7 +94,7 @@ function _linkCat {
 }
 
 function _aliasLs {
-  ls /var/run/rikerio/${RIOPROFILE}/alias 2> /dev/null
+  ls -N /var/run/rikerio/${RIOPROFILE}/alias 2> /dev/null
 }
 
 function _aliasCat {
@@ -120,7 +120,7 @@ function _aliasAdd {
 }
 
 function _profileLs {
-  ls /var/run/rikerio 2> /dev/null
+  ls -N /var/run/rikerio 2> /dev/null
 }
 
 case $1 in

@@ -44,19 +44,34 @@ _rioSubCommands()
           -i=*|--id=*) profile="${o#*=}" ;;
           "") ;;
           *)
-              # check if alias
-              if [ -f /var/run/rikerio/${profile}/alias/"${o}" ]
-              then
-                aliasFileIdx=$idx
-                ((idx++)) 
-              fi
 
-              # check if link
-              if [ -f /var/run/rikerio/${profile}/links/"${o}" ] && [ $linkFileIdx -eq "0" ];
-              then
-                linkFileIdx=$idx
-                ((idx++)) 
-              fi    
+	      if [ $aliasIdx -ne "0" ];
+	      then
+	        if [ $catIdx -ne "0" ] || [ $inspectIdx -ne "0" ] || [ $rmIdx -ne "0" ] || [ $addIdx -ne "0" ];
+	        then
+		  if [ $aliasFileIdx -ne "0" ] && [ $linkFileIdx -eq "0" ];
+		  then
+	 	    linkFileIdx=$idx
+		    ((idx++))
+		  fi
+	          if [ $aliasFileIdx -eq "0" ];
+	          then
+		    aliasFileIdx=$idx
+		    ((idx++))
+		  fi
+
+	        fi
+	      fi
+
+	      if [ $linkIdx -ne "0" ] && [ $catIdx -ne "0" ];
+	      then
+	        if [ $linkFileIdx -eq "0" ];
+	        then
+		  linkFileIdx=$idx
+		  ((idx++))
+		fi
+	      fi
+	      
          ;;
        esac
     done
@@ -108,9 +123,9 @@ _rioSubCommands()
     fi
 
     # rio link inspect
-    if [ $link -eq "1020" ];
+    if [ $link -eq "1020" ] || [ $link -eq "1023" ];
     then
-      links=$(ls /var/run/rikerio/${profile}/links/ 2> /dev/null)
+      links=$(ls -N /var/run/rikerio/${profile}/links/ 2> /dev/null)
       local IFS=$'\n'
       files=()
       files+="$links"
@@ -125,9 +140,9 @@ _rioSubCommands()
     fi
 
     # rio alias cat ? || rio alias inspect ? || rio alias rm ? || rio alias add ?
-    if [ $alias -eq "10200000" ] || [ $alias -eq "10020000" ] || [ $alias -eq "10002000" ] || [ $alias -eq "10000200" ];
+    if [ $alias -eq "10200000" ] || [ $alias -eq "10020000" ] || [ $alias -eq "10002000" ] || [ $alias -eq "10000200" ] || [ $alias -eq "10200030" ] || [ $alias -eq "10020030" ] || [ $alias -eq "10002030" ] || [ $alias -eq "10000230" ]; 
     then
-      as=$(ls /var/run/rikerio/${profile}/alias/ 2> /dev/null)
+      as=$(ls -N /var/run/rikerio/${profile}/alias/ 2> /dev/null)
       local IFS=$'\n'
       files=()
       files+="$as"
@@ -137,7 +152,7 @@ _rioSubCommands()
     # rio alias rm aliasFile ? || rio alias add aliasFile ?
     if [ $alias -eq "10002030" ] || [ $alias -eq "10002034" ] || [ $alias -eq "10000230" ] || [ $alias -eq "10000234" ];
     then
-      links=$(ls /var/run/rikerio/${profile}/links/ 2> /dev/null)
+      links=$(ls -N /var/run/rikerio/${profile}/links/ 2> /dev/null)
       local IFS=$'\n'
       files=()
       files+="$links"
