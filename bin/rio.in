@@ -127,14 +127,8 @@ case $1 in
   "profile")
     shift
     case $1 in
-      "create") shift; rio-profile-create --id=${RIOPROFILE} ;;
-    esac  
-  ;;
-  "profile")
-    shift
-    case $1 in
       "ls") shift; _profileLs ;;
-      "create") shift; rio-server --id=${RIOPROFILE} ;;
+      "create") shift; rio-profile-create --id=${RIOPROFILE} ;;
       "help") shift; _showProfileHelp ;;
       *) shift; _showProfileHelp ;;
     esac
