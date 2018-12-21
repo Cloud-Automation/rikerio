@@ -1,0 +1,10 @@
+[Unit]
+Description=Starting RikerIO Profile %I
+
+[Service]
+Type=notify
+Group=rikerio
+ExecStart=/usr/bin/rio profile create --id=%i
+
+[Install]
+WantedBy=multi-user.target

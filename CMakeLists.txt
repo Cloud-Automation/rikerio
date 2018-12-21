@@ -36,6 +36,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/version.h.in ${CMAKE_CURRENT_
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/rikerio.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/rikerio.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/rio.in ${CMAKE_CURRENT_BINARY_DIR}/rio COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/install.sh ${CMAKE_CURRENT_BINARY_DIR}/install.sh COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/rikerio@.service ${CMAKE_CURRENT_BINARY_DIR}/rikerio@.service COPYONLY)
 
 
 file(GLOB HEADERS ${INC}/*.h)
@@ -87,5 +88,6 @@ install (TARGETS rikerio-lib rio-alias-add rio-alias-rm rio-alias-inspect
     PUBLIC_HEADER DESTINATION include
     RUNTIME DESTINATION bin)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rio DESTINATION bin)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rikerio@.service DESTINATION /lib/systemd/system/rikerio@.service)
 install(CODE "execute_process(COMMAND ${CMAKE_CURRENT_BINARY_DIR}/install.sh ${CMAKE_INSTALL_PREFIX})")
 
