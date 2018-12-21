@@ -70,7 +70,7 @@ The Library is build using CMake, simply do the following:
 ```
 mkdir build
 cd build
-cmake ../..
+cmake -DCMAKE_BUILD_TYPE=Release ../..
 make
 ```
 
@@ -87,6 +87,9 @@ Install the application by typing
 sudo make install
 ```
 from the build directory.
+
+CMake specifies the installation prefix as /usr/local. On some systems that can lead to problems (Ubuntu for example). Add `-DCMAKE_INSTALL_PREFIX=/usr/` to the cmake command to specify an alternate installation prefix.
+
 
 ## CLI
 
