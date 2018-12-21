@@ -1194,13 +1194,13 @@ int rio_alias_link_rm(rio_profile_t profile, rio_alias_t alias, rio_link_t link)
 
 
     while (getline(&line, &len, fp) != -1 && link != NULL) {
-        if (strncmp(line, link, strlen(line) - 1) != 0) {
+        if (strncmp(line, link, strlen(line) - 1) == 0 && strlen(line) == (strlen(link) + 1)) {
+            found = 1;
+        } else {
             size_t insertOffset = curSize;
-            curSize += strlen(line) + 1;
+            curSize += strlen(line);
             buffer = realloc(buffer, curSize);
             memcpy(buffer + insertOffset, line, strlen(line));
-        } else {
-            found = 1;
         }
     }
 

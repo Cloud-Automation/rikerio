@@ -3,6 +3,7 @@ Description=Starting RikerIO Profile %I
 
 [Service]
 Type=notify
+NotifyAccess=all
 Group=rikerio
 ExecStart=/usr/bin/rio profile create --id=%i
 

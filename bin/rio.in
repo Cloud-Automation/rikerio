@@ -102,25 +102,21 @@ function _aliasCat {
 }
 
 function _aliasRm {
-  aliasName=\"$1\"
-  shift
-  linkNames=""
-  for i in "$@"
+  local linkNames=()
+  for i in "${@:2}"
   do
-    linkNames+=\ \"${i}\"
+    linkNames+=("${i}") 
   done
-  rio-alias-rm --id=${RIOPROFILE} ${aliasName} ${linkNames} 
+  rio-alias-rm --id=${RIOPROFILE} "$1" "${linkNames[@]}" 
 }
 
 function _aliasAdd {
-  aliasName=\"$1\"
-  shift
-  linkNames=""
-  for i in "$@"
+  local linkNames=()
+  for i in "${@:2}"
   do
-    linkNames+=\ \"${i}\"
+    linkNames+=("${i}") 
   done
-  rio-alias-add --id=${RIOPROFILE} ${aliasName} ${linkNames} 
+  rio-alias-add --id=${RIOPROFILE} "$1" "${linkNames[@]}" 
 }
 
 function _profileLs {
@@ -146,8 +142,8 @@ case $1 in
   "link")
     shift
     case $1 in
-      "ls") shift; _linkLs "$@" ;;
-      "cat") shift; _linkCat "$@" ;;
+      "ls") shift; _linkLs ;;
+      "cat") shift; _linkCat "$1" ;;
       "help") _showLinkHelp ;;
       *) _showLinkHelp ;;
     esac
@@ -155,11 +151,11 @@ case $1 in
   "alias")
     shift
     case $1 in
-      "ls") shift; _aliasLs "$@" ;;
-      "cat") shift; _aliasCat "$@" ;;
+      "ls") shift; _aliasLs ;;
+      "cat") shift; _aliasCat "$1" ;;
       "inspect") shift; rio-alias-inspect --id=${RIOPROFILE} $1 ;;
-      "rm") shift; _aliasRm "$@" ;;
-      "add") shift; _aliasAdd "$@" ;;
+      "rm") shift; _aliasRm "$1" "${@:2}" ;;
+      "add") shift; _aliasAdd "$1" "${@:2}" ;;
       "help") _showAliasHelp ;;
       *) _showAliasHelp ;;
     esac

@@ -7,7 +7,7 @@ option(WITH_SYSTEMD "Build with systemd support"    OFF)
 option(TARGET_ARCH  "Build for target"              "x86")
 
 if (${WITH_SYSTEMD})
-    add_definitions(-DWITH_SYSTEMD)
+	add_definitions(-DWITH_SYSTEMD)
 endif()
 
 set(CMAKE_MODULE_PATH   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
@@ -37,6 +37,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/rikerio.h.in ${CMAKE_CURRENT_
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/rio.in ${CMAKE_CURRENT_BINARY_DIR}/rio COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/install.sh ${CMAKE_CURRENT_BINARY_DIR}/install.sh COPYONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/rikerio@.service ${CMAKE_CURRENT_BINARY_DIR}/rikerio@.service COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/rio-completion.bash ${CMAKE_CURRENT_BINARY_DIR}/rio-completion.bash COPYONLY)
 
 
 file(GLOB HEADERS ${INC}/*.h)
@@ -45,6 +46,7 @@ file(GLOB SOURCES ${SRC}/*.c)
 add_executable(rio-profile-create ${SRC}/server.c)
 target_include_directories(rio-profile-create PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 if(${WITH_SYSTEMD}) 
+	target_compile_definitions(rio-profile-create PRIVATE WITH_SYSTEMD)
   target_link_libraries(rio-profile-create systemd rt)
 else()
   target_link_libraries(rio-profile-create rt)
@@ -83,11 +85,12 @@ target_link_libraries(rio-alias-inspect rt rikerio-lib)
 
 
 
-install (TARGETS rikerio-lib rio-alias-add rio-alias-rm rio-alias-inspect
+install (TARGETS rikerio-lib rio-profile-create rio-alias-add rio-alias-rm rio-alias-inspect
     LIBRARY DESTINATION lib
     PUBLIC_HEADER DESTINATION include
     RUNTIME DESTINATION bin)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rio DESTINATION bin)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rikerio@.service DESTINATION /lib/systemd/system/rikerio@.service)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rikerio@.service DESTINATION /lib/systemd/system)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rio-completion.bash DESTINATION /etc/bash_completion.d)
 install(CODE "execute_process(COMMAND ${CMAKE_CURRENT_BINARY_DIR}/install.sh ${CMAKE_INSTALL_PREFIX})")
 
