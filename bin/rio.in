@@ -165,5 +165,6 @@ case $1 in
     esac
   ;;
   "help") _showHelp ;;
+  "version") rio-alias-ls --version ;;
   *) _showHelp ;;
 esac

@@ -18,7 +18,6 @@ RikerIO is developed to be used with any modern linux based Operating System.
 ## Components
 
 RikerIO contains the following entities:
-- Server Application
 - Library
 - Command Line Tools
 
@@ -36,18 +35,20 @@ RikerIO contains the following entities:
 
 **Alias** : A Alias is a string representation for one ore more links.
 
-The RikerIO Server Application creates a folder structure under /var/run/rikerio/{profile} and one under /var/lib/rikerio/{profile}. The profile, if not specified is called 'default'. Start the rio-server with the --id option and specifiy a specific profile name, for example:
+The RikerIO CLI creates a folder structure under /var/run/rikerio/{profile} and one under /var/lib/rikerio/{profile}. The profile, if not specified is called 'default'. Start the rio-server with the --id option and specifiy a specific profile name, for example:
 
 ```
-rio-server --id=io
+rio profile create --id=io
 ```
 
-The /var/run/rikerio/{profile} folder is located on a tmpfs filesystem, so every action happening on those folders are performed in memory. When the RikerIO Server gets shutdown, the folder and most of its contests get destroyed. This folder holds the links, memory allocation list, semaphore, sync file and the shared memory file.
+This call is a long running server application holding the shared memory. This should be run as a daemon application with systemd for example.
+
+The /var/run/rikerio/{profile} folder is located on a tmpfs filesystem, so every action happening on those folders are performed in memory. When the RikerIO CLI gets shutdown, the folder and most of its contests get destroyed. This folder holds the links, memory allocation list, semaphore, sync file and the shared memory file.
 
 Try the following command to inspect the folder for yourself:
 
 ```
-ls /var/run/rikerio/default
+ls /var/run/rikerio/io
 ```
 
 - alias: softlink to the folder /var/lib/rikerio/default/alias.
@@ -79,10 +80,21 @@ cmake -DWITH_SYSTEMD=ON
 ```
 In that case the RikerIO Server notifies SystemD when it is ready. Make sure to declare the service type as notify.
 
+## Install
+
+Install the application by typing
+```
+sudo make install
+```
+from the build directory.
+
+## CLI
+
+Type `rio help` to get the basic CLI Commands for RikerIO. From the Command Line you can create a new profile, create, alter and remove aliases and inspect links and aliases. Links should be created from a Master application.
+
 ## API
 
 Most of the operations happening on a profile can only be done through the RikerIO Library. Only operations on the alias can also be performed by a user via a command line interface.
-
 
 ### Profiles
 
@@ -440,4 +452,5 @@ if (rio_link_get("default", linkList, 100, &fetchCount) == -1) {
 }
 ```
 
-####  
+## License
+LGPLv3  

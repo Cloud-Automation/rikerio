@@ -34,6 +34,7 @@ include(cpack)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/version.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/rikerio.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/rikerio.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/rio.in ${CMAKE_CURRENT_BINARY_DIR}/rio COPYONLY)
 
 
 file(GLOB HEADERS ${INC}/*.h)
@@ -53,7 +54,6 @@ set_target_properties(rikerio-lib PROPERTIES OUTPUT_NAME rikerio)
 set_property(TARGET rikerio-lib PROPERTY C_STANDARD 99)
 target_include_directories(rikerio-lib PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 target_link_libraries(rikerio-lib rt)
-install (TARGETS rikerio-lib LIBRARY DESTINATION lib)
 
 add_executable(rikerio-test ${SRC}/test.c)
 set_target_properties(rikerio-test PROPERTIES OUTPUT_NAME test)
@@ -80,4 +80,9 @@ target_include_directories(rio-alias-inspect PUBLIC ${INC} ${PROJECT_BINARY_DIR}
 target_link_libraries(rio-alias-inspect rt rikerio-lib)
 
 
+
+install (TARGETS rikerio-lib rio-alias-add rio-alias-rm rio-alias-inspect
+    LIBRARY DESTINATION lib
+    PUBLIC_HEADER DESTINATION include
+    RUNTIME DESINATION bin)
 
