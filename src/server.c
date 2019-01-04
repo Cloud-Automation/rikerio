@@ -71,9 +71,6 @@ static struct runtime_st {
         } alloc;
         struct {
             char file[255];
-        } sync;
-        struct {
-            char file[255];
             int fd;
             key_t key;
             int id;
@@ -110,7 +107,6 @@ static int parseArguments(int argc, char* argv[]) {
     sprintf(runtime.pFolder, "/var/lib/rikerio");
     sprintf(runtime.profile.folder, "%s/%s", runtime.folder, runtime.id);
     sprintf(runtime.profile.pFolder, "%s/%s", runtime.pFolder, runtime.id);
-    sprintf(runtime.profile.sync.file, "%s/%s", runtime.profile.folder, "sync");
     sprintf(runtime.profile.alias.folder, "%s/%s", runtime.profile.pFolder, "alias");
     sprintf(runtime.profile.alias.link, "%s/%s", runtime.profile.folder, "alias");
     sprintf(runtime.profile.links.folder, "%s/%s", runtime.profile.folder, "links");
@@ -158,7 +154,6 @@ static int parseArguments(int argc, char* argv[]) {
 
             sprintf(runtime.profile.folder, "%s/%s", runtime.folder, runtime.id);
             sprintf(runtime.profile.pFolder, "%s/%s", runtime.pFolder, runtime.id);
-            sprintf(runtime.profile.sync.file, "%s/%s", runtime.profile.folder, "sync");
             sprintf(runtime.profile.alias.folder, "%s/%s", runtime.profile.pFolder, "alias");
             sprintf(runtime.profile.alias.link, "%s/%s", runtime.profile.folder, "alias");
             sprintf(runtime.profile.shm.file, "%s/%s", runtime.profile.folder, "shm");
@@ -264,7 +259,6 @@ void tearDown(int exitCode) {
     unlink(runtime.profile.semaphore.file);
     unlink(runtime.profile.alloc.file);
     unlink(runtime.profile.alias.link);
-    unlink(runtime.profile.sync.file);
 
     DIR* d = opendir(runtime.profile.links.folder);
     struct dirent* dir = NULL;
@@ -310,16 +304,6 @@ int main(int argc, char** argv) {
     checkAndCreateFolder(runtime.pFolder);
     checkAndCreateFolder(runtime.profile.pFolder);
     checkAndCreateFolder(runtime.profile.alias.folder);
-
-    if (checkAndCreateFile(runtime.profile.sync.file, 0) == -1) {
-        fprintf(stderr, "Error creating sync file (%s).\n", strerror(errno));
-        tearDown(EXIT_FAILURE);
-    }
-
-    if (applyGroupAndRights(runtime.profile.sync.file, runtime.fileMode) != 1) {
-        fprintf(stderr, "Error applying rights to sync file (%s).\n", strerror(errno));
-        tearDown(EXIT_FAILURE);
-    }
 
     runtime.profile.semaphore.fd = checkAndCreateFile(runtime.profile.semaphore.file, 0);
 
