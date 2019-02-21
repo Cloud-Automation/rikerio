@@ -1280,6 +1280,8 @@ int rio_alias_adr_count(rio_profile_t profile, rio_alias_t alias, unsigned int* 
         rio_link_t key = { };
         strncpy(key, line, strlen(line) - 1);
 
+        free(line);
+
         if (rio_link_adr_count(profile, key, &cnt) == -1) {
             continue;
         }
