@@ -450,7 +450,227 @@ int rio_link_get(
 unsigned int fetchCount = 0;
 rio_link_t* linkList = calloc(100, sizeof(rio_link_t));
 if (rio_link_get("default", linkList, 100, &fetchCount) == -1) {
-  rio_unlock(lock);
+  exit(EXIT_FAILURE);
+}
+```
+
+#### Remove Link
+
+**Signature**
+```
+int rio_link_rm(
+  rio_profile_t profile,
+  rio_link_t link)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **link** Link to be removed.
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+
+```
+
+if (rio_link_rm("default", "somelink") == -1) {
+  exit(EXIT_FAILURE);
+}
+```
+
+#### Remove all Links
+
+**Signature**
+```
+int rio_link_rmall(
+  rio_profile_t profile)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+
+```
+
+if (rio_link_rmall("default") == -1) {
+  exit(EXIT_FAILURE);
+}
+```
+
+#### Add Link to Alias
+
+**Signature**
+```
+int rio_alias_link_add(
+  rio_profile_t profile,
+  rio_alias_t alias,
+  rio_link_t)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **alias** Alias to operate on.
+- **link** Link to be added to the alias.
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+
+```
+
+if (rio_alias_link_add("default", "somealias", "somelink") == -1) {
+  exit(EXIT_FAILURE);
+}
+```
+
+#### Remove Link from Alias
+
+**Signature**
+```
+int rio_alias_link_rm(
+  rio_profile_t profile,
+  rio_alias_t alias,
+  rio_link_t link)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **alias** Alias to operate on.
+- **link** Link to be removed.
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+
+```
+
+if (rio_alias_link_rm("default", "somealias", "somelink") == -1) {
+  exit(EXIT_FAILURE);
+}
+```
+
+#### Count addresses in alias
+
+**Signature**
+```
+int rio_alias_adr_count(
+  rio_profile_t profile,
+  rio_alias_t alias,
+  unsigned int* adrCount)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **alias** Alias
+- **adrCount** Point to the count result.
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+
+```
+
+unsigned int count = 0;
+if (rio_alias_adr_count("default", "somealias", &count) == -1) {
+  exit(EXIT_FAILURE);
+}
+```
+
+#### Get Adresse List from Alias
+
+**Signature**
+```
+int rio_alias_adr_get(
+  rio_profile_t profile,
+  rio_alias_t alias,
+  rio_adr_t[] adrList,
+  unsigned int preAdrCount,
+  unsigned int* listSize)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **alias** Alias
+- **adrList** List where the Addresses are copied to.
+- **preAdrCount** Expected Addresse Count.
+- **listSize** Delivered Addresse Count.
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+
+```
+
+unsigned int preAdrCount = 0;
+
+if (rio_alias_adr_count("deault", "somealias", &preAdrCount) == -1) {
+  exit(EXIT_FAILURE);
+}
+
+unsigned int listSize = 0;
+rio_adr_t* list = calloc(preAdrCount, sizeof(rio_adr_t));
+
+if (rio_alias_adr_get("default", "somealias", &list, preAdrCount, &listSize) == -1) {
+  exit(EXIT_FAILURE);
+}
+```
+
+#### Get Profile Semaphore
+
+**Signature**
+```
+int rio_sem_get(rio_profile_t profile, int* semId)
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID
+- **semId** Semaphore ID pointer
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+
+```
+
+int semId = -1;
+
+if (rio_sem_get("default", &semId) == -1) {
+  exit(EXIT_FAILURE);
+}
+```
+
+#### Lock Semaphore
+
+**Signature**
+```
+int rio_sem_lock(int semId)
+```
+
+**Arguments and Return Value**
+- **semId** Semaphore ID
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+
+```
+
+if (rio_sem_lock(semId) == -1) {
+  exit(EXIT_FAILURE);
+}
+```
+
+#### Unlock Semaphore
+
+**Signature**
+```
+int rio_sem_unlock(int semId)
+```
+
+**Arguments and Return Value**
+- **semId** Semaphore ID
+- **returns** Zero on success, -1 on failure.
+
+**Example**
+
+```
+
+if (rio_sem_unlock(semID) == -1) {
   exit(EXIT_FAILURE);
 }
 ```
