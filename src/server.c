@@ -15,11 +15,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
+#include <dlfcn.h>
 #include "version.h"
-
-#ifdef WITH_SYSTEMD
-#include <systemd/sd-daemon.h>
-#endif
 
 
 static struct option long_options[] = {
@@ -95,6 +92,31 @@ static void printHelp() {
 static void printVersion() {
     printf("%s\n", VERSION_SHORT);
 }
+
+static void systemd_notify(char* msg) {
+
+    typedef int (*systemd_notify)(int code, const char *param);
+
+    void *systemd_so = dlopen("libsystemd.so", RTLD_NOW);
+
+    if (systemd_so == NULL) {
+        printf("No libsystemd.so found. No SystemD notification happening.\n");
+        return;
+    }
+
+    systemd_notify *sd_notify = (systemd_notify*) dlsym(systemd_so, "sd_notify");
+    printf("Notifying systemd (%s).\n", msg);
+    systemd_notify func = (systemd_notify) sd_notify;
+    int retVal = func(0, msg);
+
+    if (retVal < 0) {
+        printf("Error notifying (sd_notify) SystemD (%d).\n", retVal);
+    }
+
+    dlclose(systemd_so);
+
+}
+
 
 static int parseArguments(int argc, char* argv[]) {
 
@@ -249,8 +271,6 @@ static int checkAndCreateFile(char* file, int closeFile) {
 
 void tearDown(int exitCode) {
 
-    printf("Exiting application.\n");
-
     /* remove shared memory file */
 
     munmap(runtime.profile.shm.ptr, runtime.profile.shm.size);
@@ -273,6 +293,10 @@ void tearDown(int exitCode) {
     rmdir(runtime.profile.folder);
 
     runtime.running = 0;
+
+    systemd_notify("STOPPING=1");
+
+    printf("Exiting application.\n");
 
     exit(exitCode);
 
@@ -406,13 +430,14 @@ int main(int argc, char** argv) {
     signal(SIGTERM, tearDown);
     signal(SIGINT, tearDown);
 
-#ifdef WITH_SYSTEMD
-    sd_notify(0, "READY=1");
-#endif
+
+    systemd_notify("READY=1");
 
     runtime.running = 1;
 
     while (runtime.running) sleep(1);
+
+    systemd_notify("STOPPING=1");
 
     return EXIT_SUCCESS;
 

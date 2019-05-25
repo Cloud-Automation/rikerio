@@ -3,7 +3,6 @@ project (RikerIO C)
 
 option(BUILD_STATIC "Compile as static library."    OFF)
 option(WITH_TESTS   "Build with tests"              OFF)
-option(WITH_SYSTEMD "Build with systemd support"    OFF)
 option(TARGET_ARCH  "Build for target"              "x86")
 
 if (${WITH_SYSTEMD})
@@ -45,12 +44,7 @@ file(GLOB SOURCES ${SRC}/*.c)
 
 add_executable(rio-profile-create ${SRC}/server.c)
 target_include_directories(rio-profile-create PUBLIC ${INC} ${PROJECT_BINARY_DIR})
-if(${WITH_SYSTEMD}) 
-	target_compile_definitions(rio-profile-create PRIVATE WITH_SYSTEMD)
-  target_link_libraries(rio-profile-create systemd rt)
-else()
-  target_link_libraries(rio-profile-create rt)
-endif()
+target_link_libraries(rio-profile-create rt dl)
 
 add_library(rikerio-lib SHARED ${SRC}/rikerio.c)
 set_target_properties(rikerio-lib PROPERTIES OUTPUT_NAME rikerio)
