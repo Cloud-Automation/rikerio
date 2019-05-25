@@ -44,6 +44,7 @@ int main() {
 
     }
 
+    free(profiles);
 
     char* ptr;
     uint32_t offset = 0;
@@ -91,6 +92,7 @@ int main() {
     }
 
 
+    free(linkList);
 
     unsigned int index = 0;
 
@@ -146,6 +148,27 @@ int main() {
         usleep(20000);
 
     }
+
+    /* remove single adr */
+
+    {
+
+        char link[255];
+        sprintf(link, "in.data[%d]", 0);
+
+        rio_adr_t adr = { 0, 0 };
+
+        printf("Removing adr %d.%d from link %s ... ", adr.byteOffset, adr.bitOffset, link);
+
+        if (rio_link_adr_rm(PROFILE, link, adr) == -1) {
+            printf("failed.\n");
+            return -1;
+        }
+
+        printf("successfull.\n");
+
+    }
+
 
     /* removing all links */
 

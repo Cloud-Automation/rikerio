@@ -931,6 +931,84 @@ exit:
 
 }
 
+int rio_link_adr_rm(rio_profile_t profile, rio_link_t key, rio_adr_t adr) {
+
+    int retVal = 0;
+
+    /* 1. get filesize of shm */
+
+    char linkFile[255];
+
+    sprintf(linkFile, "%s/%s/links/%s", RIO_ROOT_PATH, profile, key);
+
+    /* 2. open file located on /var/www/rikerio/{id}/links/{key} */
+
+    FILE* fp = fopen(linkFile, "r+");
+
+    if (!fp) {
+        retVal = 0;
+        goto exit;
+    }
+
+    int fd = fileno(fp);
+
+    if (_rio_file_lock(fd) == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+    /* 3. read allocations */
+
+
+    rio_adr_t* adrList = calloc(0, sizeof(rio_adr_t));
+    unsigned int bufSize = 10;
+    unsigned int retSize = 0;
+
+    while (1) {
+        adrList = realloc(adrList, bufSize * sizeof(rio_adr_t));
+
+        if (_rio_adr_parse(fp, adrList, bufSize, &retSize) == -1) {
+            retVal = -1;
+            goto dealloc;
+        }
+
+        if (retSize < bufSize) {
+            break;
+        }
+        bufSize += 10;
+    }
+
+    /* remove all adresses from file */
+
+    if (ftruncate(fd, 0) == -1) {
+        goto dealloc;
+    }
+
+    for (unsigned int i = 0; i < retSize; i += 1) {
+
+        if (adrList[i].byteOffset == adr.byteOffset && adrList[i].bitOffset == adr.bitOffset) {
+            continue;
+        }
+
+        fprintf(fp, "%d;%d\n", adrList[i].byteOffset, adrList[i].bitOffset);
+
+    }
+
+dealloc:
+    free(adrList);
+
+releaseFile:
+
+    _rio_file_unlock(fd);
+    fclose(fp);
+
+exit:
+
+    return retVal;
+
+}
+
+
 int rio_link_count(rio_profile_t profile, unsigned int* linkCount) {
 
     int retVal = 0;
@@ -1133,8 +1211,10 @@ int rio_alias_link_add(rio_profile_t profile, rio_alias_t alias, rio_link_t link
             if (strncmp(line, link, strlen(link)) == 0) {
                 found = 1;
             }
-
+            free(line);
+            len = 0;
         }
+        free(line);
     }
 
     /* 3. eventually add new line */
@@ -1183,53 +1263,66 @@ int rio_alias_link_rm(rio_profile_t profile, rio_alias_t alias, rio_link_t link)
         goto exit;
     }
 
-    /* 2. read and write lines from the file */
+    /* 2. read lines from the file */
 
-    found = 0;
-
+    rio_link_t* readLinks = calloc(0, sizeof(rio_link_t));
+    unsigned int bufSize = 0;
     char* line = NULL;
     size_t len = 0;
-    char* buffer = malloc(0);
-    size_t curSize = 0;
 
+    while (getline(&line, &len, fp) != -1 && line != NULL) {
 
-    while (getline(&line, &len, fp) != -1 && link != NULL) {
-        if (strncmp(line, link, strlen(line) - 1) == 0 && strlen(line) == (strlen(link) + 1)) {
-            found = 1;
-        } else {
-            size_t insertOffset = curSize;
-            curSize += strlen(line);
-            buffer = realloc(buffer, curSize);
-            memcpy(buffer + insertOffset, line, strlen(line));
+        if (strlen(line) == 0) {
+            free(line);
+            len = 0;
+            continue;
         }
+
+        bufSize += 1;
+        readLinks = realloc(readLinks, bufSize * sizeof(rio_link_t));
+        strcpy(readLinks[bufSize - 1], line);
+
+        free(line);
+        len = 0;
+
     }
 
-    if (link == NULL) {
-        curSize = 0;
-        found = 1;
+    free(line);
+
+    /* 3. reset file */
+
+    if (ftruncate(fd, 0) == -1) {
+        retVal = -1;
+        goto dealloc;
     }
 
-    if (!found) {
-        goto release;
-    }
+    /* 4 write file */
 
-    if (found && curSize > 0) {
-        fseek(fp, 0, SEEK_SET);
-        if (ftruncate(fd, curSize) == -1) {
+    rio_link_t compLink;
+    sprintf(compLink, "%s\n", link);
+    unsigned int lineCount = 0;
+
+    for (unsigned int i = 0; i < bufSize; i += 1) {
+
+        if (strcmp(readLinks[i], compLink) == 0) {
+            continue;
+        }
+
+        lineCount += 1;
+        if (fprintf(fp, "%s", readLinks[i]) < 0) {
             retVal = -1;
-            goto release;
-        }
-        fprintf(fp, "%s", buffer);
+            goto dealloc;
+        };
+
     }
 
-    if (found && curSize == 0) {
+    if (lineCount == 0) {
         unlink(linkFile);
-        goto release;
+        goto dealloc;
     }
 
-release:
-
-    free(buffer);
+dealloc:
+    free(readLinks);
 
 exit:
 
