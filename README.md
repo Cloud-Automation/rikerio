@@ -74,10 +74,6 @@ cmake -DCMAKE_BUILD_TYPE=Release ../..
 make
 ```
 
-In case you want to use the RikerIO Server with systemd, add the SystemD Option to the cmake command:
-```
-cmake -DWITH_SYSTEMD=ON
-```
 In that case the RikerIO Server notifies SystemD when it is ready. Make sure to declare the service type as notify.
 
 ## Install
