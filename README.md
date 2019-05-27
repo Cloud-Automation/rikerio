@@ -153,6 +153,25 @@ for (unsigned int i = 0; i < retSize; i += 1) {
 }
 free(list);
 ```
+#### Get Profile Counter
+
+**Signature**
+```
+int rio_profile_counter_get(rio_profile_t profile, unsigned int* counter)`
+```
+
+**Arguments and Return Value**
+- **profile** Profile ID.
+- **counter** Counter value pointer.
+
+**Example**
+
+```
+unsigned int counter = 0;
+if (rio_profile_counter_get("default", &counter) == -1) {
+    exit(EXIT_FAILURE);
+}
+```
 
 ### Allocations
 #### Add allocation
