@@ -63,6 +63,69 @@ static int _rio_file_unlock(int fd) {
     return flock(fd, LOCK_UN);
 }
 
+static int _rio_counter_increase(rio_profile_t profile) {
+
+    int retVal = 0;
+
+    /* 1. get filesize of shm */
+
+    char counterFile[255];
+
+    sprintf(counterFile, "%s/%s/counter", RIO_ROOT_PATH, profile);
+
+    /* 2. open file located on /var/www/rikerio/{id}/counter */
+
+    FILE* fp = fopen(counterFile, "r+");
+
+    if (!fp) {
+        retVal = 0;
+        goto exit;
+    }
+
+    int fd = fileno(fp);
+
+    if (_rio_file_lock(fd) == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+    /* 3. read counter */
+
+    char cntrString[100] = { 0 };
+    ssize_t size = 0;
+    size = read(fd, &cntrString, 100);
+
+    if (size == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+    unsigned int cntrValue = atoi(cntrString);
+
+    cntrValue += 1;
+
+    if (ftruncate(fd, 0) == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+    rewind(fp);
+
+    fprintf(fp, "%d", cntrValue);
+
+releaseFile:
+
+    _rio_file_unlock(fd);
+    fclose(fp);
+
+exit:
+
+    return retVal;
+
+
+
+}
+
 static int _rio_split_string(char* src, char*** trg) {
 
     char delimiter[] = ";";
@@ -365,6 +428,64 @@ int rio_profile_get(rio_profile_t list[], unsigned int listSize, unsigned int* r
 
 }
 
+int rio_profile_counter_get(rio_profile_t profile, unsigned int* counter) {
+
+    if (counter == NULL) {
+        return -1;
+    }
+
+    int retVal = 0;
+
+    /* 1. get filesize of shm */
+
+    char counterFile[255];
+
+    sprintf(counterFile, "%s/%s/counter", RIO_ROOT_PATH, profile);
+
+    /* 2. open file located on /var/www/rikerio/{id}/counter */
+
+    FILE* fp = fopen(counterFile, "r");
+
+    if (!fp) {
+        retVal = 0;
+        goto exit;
+    }
+
+    int fd = fileno(fp);
+
+    if (_rio_file_lock(fd) == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+    /* 3. read counter */
+
+    char cntrString[100] = { 0 };
+    ssize_t size = 0;
+    size = read(fd, &cntrString, 100);
+
+    if (size == -1) {
+        retVal = -1;
+        goto releaseFile;
+    }
+
+    *counter = atoi(cntrString);
+
+releaseFile:
+
+    _rio_file_unlock(fd);
+    fclose(fp);
+
+exit:
+
+    return retVal;
+
+
+
+
+
+}
+
 int rio_memory_inspect(rio_profile_t profile, char** ptr, size_t* size) {
 
     /* 1. get filesize of shm */
@@ -503,6 +624,8 @@ int rio_alloc_add(rio_profile_t profile, uint32_t size, char** ptr, uint32_t* of
         retVal = -1;
     }
 
+    _rio_counter_increase(profile);
+
 release:
 
     free(curList);
@@ -590,6 +713,7 @@ int rio_alloc_rm(rio_profile_t profile, uint32_t offset) {
         retVal = -1;
     }
 
+    _rio_counter_increase(profile);
 
 release:
 
@@ -626,6 +750,9 @@ int rio_alloc_rmall(rio_profile_t profile) {
     }
 
     fclose(fp);
+
+    _rio_counter_increase(profile);
+
     return retVal;
 
 }
@@ -818,6 +945,8 @@ int rio_link_adr_add(rio_profile_t profile, rio_link_t key, rio_adr_t adr) {
         retVal = -1;
     }
 
+    _rio_counter_increase(profile);
+
 release:
 
     free(curList);
@@ -994,6 +1123,8 @@ int rio_link_adr_rm(rio_profile_t profile, rio_link_t key, rio_adr_t adr) {
 
     }
 
+    _rio_counter_increase(profile);
+
 dealloc:
     free(adrList);
 
@@ -1119,6 +1250,8 @@ int rio_link_rm(rio_profile_t profile, rio_link_t key) {
         return -1;
     };
 
+    _rio_counter_increase(profile);
+
     return retVal;
 
 }
@@ -1165,6 +1298,8 @@ int rio_link_rmall(rio_profile_t profile) {
     }
 
     closedir (dir);
+
+    _rio_counter_increase(profile);
 
     return retVal;
 
@@ -1229,6 +1364,8 @@ int rio_alias_link_add(rio_profile_t profile, rio_alias_t alias, rio_link_t link
         }
 
     }
+
+    _rio_counter_increase(profile);
 
     /* 4. close and unlock file */
 
@@ -1320,6 +1457,8 @@ int rio_alias_link_rm(rio_profile_t profile, rio_alias_t alias, rio_link_t link)
         unlink(linkFile);
         goto dealloc;
     }
+
+    _rio_counter_increase(profile);
 
 dealloc:
     free(readLinks);

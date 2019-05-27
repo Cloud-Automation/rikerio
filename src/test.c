@@ -46,6 +46,17 @@ int main() {
 
     free(profiles);
 
+    unsigned int activityCounter = 0;
+
+    printf("Reading profile activity counter ... ");
+
+    if (rio_profile_counter_get(PROFILE, &activityCounter) == -1) {
+        printf("failed (%s)\n", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    printf("success, counter is at value %d.\n", activityCounter);
+
     char* ptr;
     uint32_t offset = 0;
     uint32_t size = 400;
@@ -248,6 +259,25 @@ int main() {
     }
 
     printf("successfull.\n");
+
+    printf("Reading activity counter again ... ");
+
+    unsigned int newActivityCounter = 0;
+
+    if (rio_profile_counter_get(PROFILE, &newActivityCounter) == -1) {
+        printf("failed (%s)\n", strerror(errno));
+        return EXIT_FAILURE;
+    }
+
+    printf("success, counter value is at %d.\n", newActivityCounter);
+
+    printf("Comparing first and second activity counter value ... ");
+    if (activityCounter == newActivityCounter) {
+        printf("failed, %d == %d.\n", activityCounter, newActivityCounter);
+        return EXIT_FAILURE;
+    }
+
+    printf("success.\n");
 
     return EXIT_SUCCESS;
 

@@ -72,6 +72,10 @@ static struct runtime_st {
             key_t key;
             int id;
         } semaphore;
+        struct {
+            char file[255];
+            int fd;
+        } counter;
 
     } profile;
 
@@ -134,6 +138,7 @@ static int parseArguments(int argc, char* argv[]) {
     sprintf(runtime.profile.links.folder, "%s/%s", runtime.profile.folder, "links");
     sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "alloc");
     sprintf(runtime.profile.semaphore.file, "%s/%s", runtime.profile.folder, "sem");
+    sprintf(runtime.profile.counter.file, "%s/%s", runtime.profile.folder, "counter");
 
     runtime.profile.shm.size = 4096;
     sprintf(runtime.profile.shm.file, "%s/%s", runtime.profile.folder, "/shm");
@@ -279,6 +284,7 @@ void tearDown(int exitCode) {
     unlink(runtime.profile.semaphore.file);
     unlink(runtime.profile.alloc.file);
     unlink(runtime.profile.alias.link);
+    unlink(runtime.profile.counter.file);
 
     DIR* d = opendir(runtime.profile.links.folder);
     struct dirent* dir = NULL;
@@ -328,6 +334,22 @@ int main(int argc, char** argv) {
     checkAndCreateFolder(runtime.pFolder);
     checkAndCreateFolder(runtime.profile.pFolder);
     checkAndCreateFolder(runtime.profile.alias.folder);
+
+    /* create profile action counter */
+
+    runtime.profile.counter.fd = checkAndCreateFile(runtime.profile.counter.file, 0);
+
+    if (applyGroupAndRights(runtime.profile.counter.file, runtime.fileMode) == -1 ) {
+        fprintf(stderr, "Error applying rights to counter file (%s).\n", strerror(errno));
+        tearDown(EXIT_FAILURE);
+    }
+
+    dprintf(runtime.profile.counter.fd, "0");
+
+    close(runtime.profile.counter.fd);
+
+
+    /* create semphore file */
 
     runtime.profile.semaphore.fd = checkAndCreateFile(runtime.profile.semaphore.file, 0);
 
