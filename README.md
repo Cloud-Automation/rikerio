@@ -1,5 +1,7 @@
 # RikerIO
 
+[![Build Status](https://travis-ci.org/Cloud-Automation/rikerio.svg?branch=master)](https://travis-ci.org/Cloud-Automation/rikerio)
+
 RikerIO is a small framework that helps connecting IO Systems like General Purpose IOs or Bussystems easily with your application task.
 
 ![RikerIO Sketch](doc/sketch.png)
