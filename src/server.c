@@ -141,7 +141,7 @@ static int parseArguments(int argc, char* argv[]) {
     sprintf(runtime.profile.counter.file, "%s/%s", runtime.profile.folder, "counter");
 
     runtime.profile.shm.size = 4096;
-    sprintf(runtime.profile.shm.file, "%s/%s", runtime.profile.folder, "/shm");
+    sprintf(runtime.profile.shm.file, "%s/%s", runtime.profile.folder, "shm");
 
     runtime.profile.shm.protection = PROT_READ | PROT_WRITE;
     runtime.profile.shm.visibility = MAP_SHARED;
@@ -187,6 +187,7 @@ static int parseArguments(int argc, char* argv[]) {
             sprintf(runtime.profile.links.folder, "%s/%s", runtime.profile.folder, "links");
             sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "alloc");
             sprintf(runtime.profile.semaphore.file, "%s/%s", runtime.profile.folder, "sem");
+            sprintf(runtime.profile.counter.file, "%s/%s", runtime.profile.folder, "counter");
 
             break;
         case 'h':
