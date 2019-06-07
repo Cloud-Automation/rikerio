@@ -84,7 +84,7 @@ add_executable(rio-master ${SRC}/master.c)
 target_include_directories(rio-master PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 target_link_libraries(rio-master rt dl rikerio-lib)
 
-install (TARGETS rikerio-lib rio-profile-create rio-alias-add rio-alias-rm rio-alias-inspect
+install (TARGETS rikerio-lib rio-profile-create rio-alias-add rio-alias-rm rio-alias-inspect rio-master
     LIBRARY DESTINATION lib
     PUBLIC_HEADER DESTINATION include
     RUNTIME DESTINATION bin)
