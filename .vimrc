@@ -2,7 +2,7 @@ let g:solarized_termcolors=256
 
 syntax enable
 let g:solarized_termcolors=256
-set background=dark
+set background=light
 colorscheme solarized
 
 autocmd BufEnter * colorscheme solarized

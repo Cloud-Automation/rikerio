@@ -42,9 +42,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/rio-completion.bash ${CMAKE_CURRE
 file(GLOB HEADERS ${INC}/*.h)
 file(GLOB SOURCES ${SRC}/*.c)
 
-add_executable(rio-profile-create ${SRC}/server.c)
-target_include_directories(rio-profile-create PUBLIC ${INC} ${PROJECT_BINARY_DIR})
-target_link_libraries(rio-profile-create rt dl)
 
 add_library(rikerio-lib SHARED ${SRC}/rikerio.c)
 set_target_properties(rikerio-lib PROPERTIES OUTPUT_NAME rikerio)
@@ -79,10 +76,20 @@ target_link_libraries(rio-alias-inspect rt rikerio-lib)
 
 
 
+add_executable(rio-profile-create ${SRC}/server.c)
+target_include_directories(rio-profile-create PUBLIC ${INC} ${PROJECT_BINARY_DIR})
+target_link_libraries(rio-profile-create rt dl)
+
+add_executable(rio-master ${SRC}/master.c)
+target_include_directories(rio-master PUBLIC ${INC} ${PROJECT_BINARY_DIR})
+target_link_libraries(rio-master rt dl rikerio-lib)
+
 install (TARGETS rikerio-lib rio-profile-create rio-alias-add rio-alias-rm rio-alias-inspect
     LIBRARY DESTINATION lib
     PUBLIC_HEADER DESTINATION include
     RUNTIME DESTINATION bin)
+
+
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rio DESTINATION bin)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rikerio@.service DESTINATION /lib/systemd/system)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rio-completion.bash DESTINATION /etc/bash_completion.d)
