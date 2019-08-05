@@ -1,0 +1,152 @@
+[
+  {
+    "name": "master.register",
+    "params": {
+      "name": "string1",
+      "pid": 1
+    },
+    "returns": {
+      "code": 0,
+      "data": "string2"
+    }
+  },
+  {
+    "name": "master.unregister",
+    "params": {
+      "token": "token"
+    },
+    "returns": {
+      "code": 0
+    }
+  },
+  {
+    "name": "master.list",
+    "returns": {
+      "code": 0,
+      "data": [ "master.name" ]
+    }
+  },
+  {
+    "name": "alloc",
+    "params": {
+      "token": "token",
+      "size": 0
+    },
+    "returns": {
+      "code": 1,
+      "data": 2
+    }
+  },
+  {
+    "name": "dealloc",
+    "params": {
+      "token": "token",
+      "offset": 0
+    },
+    "returns": {
+      "code": 1
+    }
+  },
+  {
+    "name": "data.create",
+    "params": {
+      "token": "string1",
+      "id": "string2",
+      "data" : {
+        "datatype": 0,
+        "byteOffset": 1,
+        "bitOffset": 2,
+        "bitSize": 3
+      }
+    },
+    "returns": {
+      "code": 3
+    }
+  },
+  {
+    "name": "data.remove",
+    "params": {
+      "token": "string1",
+      "id": "string2"
+    },
+    "returns": {
+      "code": 0
+    }
+  },
+  {
+    "name": "data.list",
+    "params": {
+      "id": "string1"
+    },
+    "returns": {
+      "code": 0,
+      "data": [ "string2" ]
+    }
+  },
+  {
+    "name": "data.get",
+    "params": {
+      "id": "string1"
+    },
+    "returns" : {
+      "code": 0,
+      "data": {
+        "id": "string1",
+        "datatype": 0,
+        "byteOffset": 1,
+        "bitOffset": 2,
+        "bitSize": 3,
+        "master": "string3"
+      }
+    }
+  },
+  {
+    "name": "link.add",
+    "params": {
+      "linkId": "string1",
+      "dataId": "string2"
+    },
+    "returns": {
+      "code": 0
+    }
+  },
+  {
+    "name": "link.remove",
+    "params": {
+      "linkId": "string1",
+      "dataId": "string2"
+    },
+    "returns": {
+      "code": 0
+    }
+  },
+  {
+    "name": "link.list",
+    "params": {
+      "pattern": "string1"
+    },
+    "returns": {
+      "code": 0,
+      "data": [ "link.name" ]
+    }
+  },
+  {
+    "name": "link.get",
+    "params": {
+      "id": "string1"
+    },
+    "returns" : {
+      "code": 0,
+      "data": [
+        {
+          "id": "string1",
+          "datatype": 1,
+          "byteOffset": 2,
+          "bitOffset": 3,
+          "bitSize": 4,
+          "master": "string3"
+        }
+      ]
+    }
+  }
+]

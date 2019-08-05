@@ -36,6 +36,6 @@ let g:syntastic_c_compiler_options = '-Wall -Wextra -Werror -Wuninitialized'
 
 autocmd BufNewFile,BufRead *.test.cpp,*.mock.c let g:syntastic_cpp_compiler_options = '-D__testing=1'
 
-let g:formatdef_astyle_google_c = '"astyle --style=google"'
-let g:formatters_c = ['astyle_google_c']
+let g:formatdef_astyle_google_cpp = '"astyle --style=google"'
+let g:formatters_cpp = ['astyle_google_cpp']
 

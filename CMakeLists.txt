@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.2.0)
-project (RikerIO C)
+project (RikerIO C CXX)
 
 option(BUILD_STATIC "Compile as static library."    OFF)
 option(WITH_TESTS   "Build with tests"              OFF)
@@ -31,6 +31,11 @@ include(GetGitRevisionDescription)
 include(version)
 include(cpack)
 
+include(jsoncpp)
+include(json-rpc-cpp)
+
+set(CMAKE_PREFIX_PATH ${JSONCPP_BIN_DIR})
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/version.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/include/rikerio.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/rikerio.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/install.sh ${CMAKE_CURRENT_BINARY_DIR}/postinst)
@@ -42,10 +47,33 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/rio-completion.bash ${CMAKE_CURRE
 file(GLOB HEADERS ${INC}/*.h)
 file(GLOB SOURCES ${SRC}/*.c)
 
-add_executable(rio-profile-create ${SRC}/server.c)
-target_include_directories(rio-profile-create PUBLIC ${INC} ${PROJECT_BINARY_DIR})
-target_link_libraries(rio-profile-create rt dl)
+include_directories(${PROJECT_BINARY_DIR}/include)
 
+add_executable(rio-server ${SRC}/server.cpp ${SRC}/server-main.cpp ${SRC}/master.cpp)
+target_include_directories(rio-server PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
+target_link_libraries(rio-server rt dl ${JSONRPC_LIB_SERVER} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
+add_dependencies(rio-server ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
+
+add_executable(rio-master-create ${SRC}/master-create.cpp)
+target_include_directories(rio-master-create PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
+target_link_libraries(rio-master-create rt dl ${JSONRPC_LIB_CLIENT} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
+add_dependencies(rio-master-create ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
+
+add_executable(rio-master-remove ${SRC}/master-remove.cpp)
+target_include_directories(rio-master-remove PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
+target_link_libraries(rio-master-remove rt dl ${JSONRPC_LIB_CLIENT} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
+add_dependencies(rio-master-remove ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
+
+add_executable(rio-master-list ${SRC}/master-list.cpp)
+target_include_directories(rio-master-list PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
+target_link_libraries(rio-master-list rt dl ${JSONRPC_LIB_CLIENT} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
+add_dependencies(rio-master-list ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
+
+
+
+
+
+#[[
 add_library(rikerio-lib SHARED ${SRC}/rikerio.c)
 set_target_properties(rikerio-lib PROPERTIES OUTPUT_NAME rikerio)
 set_property(TARGET rikerio-lib PROPERTY C_STANDARD 99)
@@ -79,7 +107,7 @@ target_link_libraries(rio-alias-inspect rt rikerio-lib)
 
 
 
-install (TARGETS rikerio-lib rio-profile-create rio-alias-add rio-alias-rm rio-alias-inspect
+install (TARGETS rikerio-lib rio-server rio-alias-add rio-alias-rm rio-alias-inspect
     LIBRARY DESTINATION lib
     PUBLIC_HEADER DESTINATION include
     RUNTIME DESTINATION bin)
@@ -87,4 +115,4 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rio DESTINATION bin)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rikerio@.service DESTINATION /lib/systemd/system)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rio-completion.bash DESTINATION /etc/bash_completion.d)
 #install(CODE "execute_process(COMMAND ${CMAKE_CURRENT_BINARY_DIR}/install.sh ${CMAKE_INSTALL_PREFIX})")
-
+]]#
