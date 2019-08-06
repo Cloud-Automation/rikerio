@@ -1,4 +1,5 @@
-#include "master.h"
+#include "common/master.h"
+#include "common/error.h"
 #include <stdexcept>
 
 using namespace RikerIO;
@@ -32,7 +33,7 @@ Master& MasterFactory::create(const std::string& label, int pid = -1) {
 
         if (tries == 2) {
 
-            throw std::runtime_error("Creating token failed.");
+            throw GenerateTokenException();
 
         }
 

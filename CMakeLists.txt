@@ -49,25 +49,36 @@ file(GLOB SOURCES ${SRC}/*.c)
 
 include_directories(${PROJECT_BINARY_DIR}/include)
 
-add_executable(rio-server ${SRC}/server.cpp ${SRC}/server-main.cpp ${SRC}/master.cpp)
+add_executable(rio-server 
+    ${SRC}/server/server.cpp 
+    ${SRC}/server/server-main.cpp 
+    ${SRC}/common/master.cpp
+    ${SRC}/common/memory.cpp 
+    ${SRC}/common/data.cpp)
+
 target_include_directories(rio-server PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
 target_link_libraries(rio-server rt dl ${JSONRPC_LIB_SERVER} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
 add_dependencies(rio-server ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
 
-add_executable(rio-master-create ${SRC}/master-create.cpp)
+add_executable(rio-master-create ${SRC}/cli/master-create.cpp)
 target_include_directories(rio-master-create PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
 target_link_libraries(rio-master-create rt dl ${JSONRPC_LIB_CLIENT} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
 add_dependencies(rio-master-create ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
 
-add_executable(rio-master-remove ${SRC}/master-remove.cpp)
+add_executable(rio-master-remove ${SRC}/cli/master-remove.cpp)
 target_include_directories(rio-master-remove PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
 target_link_libraries(rio-master-remove rt dl ${JSONRPC_LIB_CLIENT} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
 add_dependencies(rio-master-remove ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
 
-add_executable(rio-master-list ${SRC}/master-list.cpp)
+add_executable(rio-master-list ${SRC}/cli/master-list.cpp)
 target_include_directories(rio-master-list PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
 target_link_libraries(rio-master-list rt dl ${JSONRPC_LIB_CLIENT} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
 add_dependencies(rio-master-list ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
+
+add_executable(rio-data-add ${SRC}/cli/data-create.cpp)
+target_include_directories(rio-data-add PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
+target_link_libraries(rio-data-add rt dl ${JSONRPC_LIB_CLIENT} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
+add_dependencies(rio-data-add ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
 
 
 

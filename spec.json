@@ -76,7 +76,7 @@
   {
     "name": "data.list",
     "params": {
-      "id": "string1"
+      "pattern": "string1"
     },
     "returns": {
       "code": 0,

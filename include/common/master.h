@@ -13,7 +13,7 @@ class Master {
 
   public:
     Master(std::string label, std::string token, int pid = -1) :
-        id(Master::MasterCounter++), label(label), token(token), pid(pid) {
+        id(++Master::MasterCounter), label(label), token(token), pid(pid) {
 
     }
 
@@ -55,9 +55,24 @@ class MasterFactory {
     bool remove(const std::string&);
     bool remove(unsigned int);
 
-    /*   Master& getMaster(std::string&);
-        Master& getMaster(unsigned int);
-    */
+    std::shared_ptr<Master> operator[] (const unsigned int id) {
+        return idMap[id];
+    }
+
+    std::shared_ptr<Master> operator[] (const std::string& token) {
+
+        for (auto m : idMap) {
+
+            if (m.second->getToken() == token) {
+                return m.second;
+            }
+
+        }
+
+        return nullptr;
+
+    }
+
 
     std::vector<std::shared_ptr<Master>> list();
 

@@ -1,8 +1,12 @@
 #ifndef __RIO_SERVER_H__
 #define __RIO_SERVER_H__
 
-#include "abstractstubserver.h"
-#include "master.h"
+#include "server/abstractstubserver.h"
+#include "common/master.h"
+#include "common/owner.h"
+#include "common/memory.h"
+#include "common/data.h"
+
 #include <jsonrpccpp/server/connectors/unixdomainsocketserver.h>
 #include <string>
 
@@ -30,7 +34,16 @@ class Server : public AbstractStubServer {
   private:
 
     std::string& id;
+
     MasterFactory masterFactory;
+
+    /* memory management */
+    Memory memory;
+    OwnerFactory<unsigned int, unsigned int> allocOwnerFactory;
+
+    /* data management */
+    DataFactory dataFactory;
+    OwnerFactory<std::string, unsigned int> dataOwnerFactory;
 
 };
 
