@@ -4,63 +4,50 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <string>
+#include "common/datatypes.h"
 
 namespace RikerIO  {
 
 class Data {
-
   public:
+    static Datatype GetTypeFromString(const std::string& str);
+    static std::string GetStringFromType(Datatype type);
 
-    enum Type {
-        UNDEFINED = 0,
-        BIT = 1,
-        UINT8 = 2,
-        INT8 = 3,
-        UINT16 = 4,
-        INT16 = 5,
-        UINT32 = 6,
-        INT32 = 7,
-        UINT64 = 8,
-        INT64 = 9,
-        FLOAT = 10,
-        DOUBLE = 11
-    };
-
-    static Type GetTypeFromString(const std::string&);
-    static std::string GetStringFromType(const Type);
-
-    Data(Type type, unsigned int byteOffset, unsigned int bitOffset, unsigned int bitSize) :
-        type(type),
-        byteOffset(byteOffset),
-        bitOffset(bitOffset),
-        bitSize(bitSize) {
-
+    Data() : type(Datatype::UNDEFINED), byteOffset(0), bitOffset(0), bitSize(0) {
     }
 
-    Type getType() {
+    Data(RikerIO::Datatype type, unsigned int byteOffset, unsigned int bitOffset, unsigned int bitSize) :
+        type(type), byteOffset(byteOffset), bitOffset(bitOffset), bitSize(bitSize) {
+    }
+
+    bool operator==(const Data& a) const {
+        return type == a.getDatatype() &&
+               byteOffset == a.getByteOffset() &&
+               bitOffset == a.getBitOffset() &&
+               bitSize == a.getBitSize();
+    }
+
+    RikerIO::Datatype getDatatype() const {
         return type;
     }
-
-    unsigned int getByteOffset() {
+    unsigned int getByteOffset() const {
         return byteOffset;
     }
-
-    unsigned int getBitOffset() {
+    unsigned int getBitOffset() const {
         return bitOffset;
     }
-
-    unsigned int getBitSize() {
+    unsigned int getBitSize() const {
         return bitSize;
     }
 
-  private:
-
-    Type type;
+  protected:
+    RikerIO::Datatype type;
     unsigned int byteOffset;
     unsigned int bitOffset;
     unsigned int bitSize;
-
 };
+
 
 class DataFactory {
 

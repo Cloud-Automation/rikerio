@@ -1,9 +1,10 @@
 [
   {
-    "name": "master.register",
+    "name": "task.register",
     "params": {
       "name": "string1",
-      "pid": 1
+      "pid": 1,
+      "track": false
     },
     "returns": {
       "code": 0,
@@ -11,7 +12,7 @@
     }
   },
   {
-    "name": "master.unregister",
+    "name": "task.unregister",
     "params": {
       "token": "token"
     },
@@ -20,14 +21,14 @@
     }
   },
   {
-    "name": "master.list",
+    "name": "task.list",
     "returns": {
       "code": 0,
-      "data": [ "master.name" ]
+      "data": [ "taskName1" ]
     }
   },
   {
-    "name": "alloc",
+    "name": "memory.alloc",
     "params": {
       "token": "token",
       "size": 0
@@ -38,13 +39,20 @@
     }
   },
   {
-    "name": "dealloc",
+    "name": "memory.dealloc",
     "params": {
       "token": "token",
       "offset": 0
     },
     "returns": {
       "code": 1
+    }
+  },
+  {
+    "name": "memory.inspect",
+    "returns": {
+        "code": 0,
+        "data": [ { "offset": 0, "size": 16, "task": "taskName" } ]
     }
   },
   {
@@ -86,17 +94,18 @@
   {
     "name": "data.get",
     "params": {
-      "id": "string1"
+      "id": "string1",
+      "token": "string2"
     },
     "returns" : {
       "code": 0,
       "data": {
-        "id": "string1",
+        "id": "string3",
         "datatype": 0,
         "byteOffset": 1,
         "bitOffset": 2,
         "bitSize": 3,
-        "master": "string3"
+        "master": "string4"
       }
     }
   },
@@ -147,6 +156,16 @@
           "master": "string3"
         }
       ]
+    }
+  },
+  {
+    "name": "link.updates",
+    "params": {
+        "token": "string1"
+    },
+    "returns": {
+        "code": 0,
+        "data": [ "linkId1" ]
     }
   }
 ]

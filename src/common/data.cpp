@@ -3,10 +3,9 @@
 
 using namespace RikerIO;
 
+Datatype Data::GetTypeFromString(const std::string& str) {
 
-Data::Type Data::GetTypeFromString(const std::string& str) {
-
-    static std::map<std::string, Data::Type> stringTypeMap{
+    static std::map<std::string, Datatype> stringTypeMap{
         { "undefined", UNDEFINED },
         { "bit", BIT },
         { "uint8", UINT8},
@@ -30,9 +29,9 @@ Data::Type Data::GetTypeFromString(const std::string& str) {
 
 }
 
-std::string Data::GetStringFromType(Data::Type type) {
+std::string Data::GetStringFromType(Datatype type) {
 
-    static std::map<Data::Type, std::string> typeStringMap{
+    static std::map<Datatype, std::string> typeStringMap{
         { UNDEFINED, "undefined" },
         { BIT, "bit" },
         { UINT8, "uint8" },

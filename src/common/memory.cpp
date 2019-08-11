@@ -11,42 +11,45 @@
 
 using namespace RikerIO;
 
-Memory::Memory(size_t size, std::string id) :
+Memory::Memory(unsigned int size, std::string id) :
     size(size),
     id(id),
     ptr(NULL),
     filename("/var/run/rikerio/" + id + "/shm"),
-    allocMap() {
+    allocMap(),
+    freeSet() {
+
+    freeSet.insert({ 0, size });
 
     /* create file */
 
     int fd = open (filename.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
     if (fd == -1) {
-        throw InternalException(strerror(errno));
+        throw InternalError(strerror(errno));
     }
 
     /* resize file */
 
     if (ftruncate(fd, size) == -1) {
-        throw InternalException(strerror(errno));
+        throw InternalError(strerror(errno));
     }
 
     /* get group */
     struct group* grp = getgrnam("rikerio");
 
     if (!grp) {
-        throw InternalException("Error fetching rikerio system group.");
+        throw InternalError("Error fetching rikerio system group.");
     }
 
     mode_t oldMask = umask(0);
 
     if (chown(filename.c_str(), -1, grp->gr_gid) != 0) {
-        throw InternalException("Error setting group on shared memory file.");
+        throw InternalError("Error setting group on shared memory file.");
     }
 
     if (chmod(filename.c_str(), 0664) != 0) {
-        throw InternalException("Error setting permissions on shared memory file.");
+        throw InternalError("Error setting permissions on shared memory file.");
     }
 
     umask(oldMask);
@@ -62,5 +65,31 @@ Memory::~Memory() {
 
     munmap(ptr, size);
     unlink(filename.c_str());
+
+}
+
+unsigned int Memory::alloc(unsigned int size) {
+
+    Area toBeRemoved;
+    bool inserted = false;
+
+    for (auto f : freeSet) {
+        if (f.size <= size) {
+            allocMap[f.offset] = size;
+            toBeRemoved = f;
+            inserted = true;
+            break;
+        }
+    }
+
+    if (!inserted) {
+        throw OutOfSpaceError();
+    }
+
+
+    freeSet.insert({toBeRemoved.offset + size, toBeRemoved.size - size});
+    freeSet.erase(toBeRemoved);
+
+    return toBeRemoved.offset;
 
 }

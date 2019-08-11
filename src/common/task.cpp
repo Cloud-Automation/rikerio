@@ -1,17 +1,17 @@
-#include "common/master.h"
+#include "common/task.h"
 #include "common/error.h"
 #include <stdexcept>
 
 using namespace RikerIO;
 
-unsigned int Master::MasterCounter = 0;
-std::string MasterFactory::TokenCharacterList = "abcdefghiklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+unsigned int Task::TaskCounter = 0;
+std::string TaskFactory::TokenCharacterList = "abcdefghiklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-MasterFactory::MasterFactory() : tokenMap(), idMap()  {
+TaskFactory::TaskFactory() : tokenMap(), idMap()  {
 
 }
 
-Master& MasterFactory::create(const std::string& label, int pid = -1) {
+Task& TaskFactory::create(const std::string& label, int pid = -1, bool track = false) {
     /* initialize random seed: */
     srand (time(NULL));
     std::string token = "";
@@ -21,10 +21,10 @@ Master& MasterFactory::create(const std::string& label, int pid = -1) {
         // create token
 
         token = "";
-        for (unsigned int i = 0; i < MASTER_TOKEN_SIZE; i += 1) {
+        for (unsigned int i = 0; i < TASK_TOKEN_SIZE; i += 1) {
             /* generate secret number between 1 and 10: */
-            unsigned int charPos = rand() % MasterFactory::TokenCharacterList.length();
-            token.append(1, MasterFactory::TokenCharacterList.at(charPos));
+            unsigned int charPos = rand() % TaskFactory::TokenCharacterList.length();
+            token.append(1, TaskFactory::TokenCharacterList.at(charPos));
         }
 
         if (tokenMap.find(token) == tokenMap.end()) {
@@ -39,7 +39,7 @@ Master& MasterFactory::create(const std::string& label, int pid = -1) {
 
     }
 
-    std::shared_ptr<Master> m = std::make_shared<Master>(label, token, pid);
+    std::shared_ptr<Task> m = std::make_shared<Task>(label, token, pid);
     tokenMap[m->getToken()] = m;
     idMap[m->getId()] = m;
 
@@ -47,14 +47,14 @@ Master& MasterFactory::create(const std::string& label, int pid = -1) {
 
 }
 
-bool MasterFactory::remove(const std::string& token) {
+bool TaskFactory::remove(const std::string& token) {
 
     if (tokenMap.find(token) == tokenMap.end()) {
         return false;
     }
 
 
-    std::shared_ptr<Master> m = tokenMap[token];
+    std::shared_ptr<Task> m = tokenMap[token];
 
     tokenMap.erase(token);
     idMap.erase(m->getId());
@@ -63,14 +63,14 @@ bool MasterFactory::remove(const std::string& token) {
 
 }
 
-bool MasterFactory::remove(const unsigned int id) {
+bool TaskFactory::remove(const unsigned int id) {
 
     if (idMap.find(id) == idMap.end()) {
         return false;
     }
 
 
-    std::shared_ptr<Master> m = idMap[id];
+    std::shared_ptr<Task> m = idMap[id];
 
     idMap.erase(id);
     tokenMap.erase(m->getToken());
@@ -79,9 +79,9 @@ bool MasterFactory::remove(const unsigned int id) {
 
 }
 
-std::vector<std::shared_ptr<Master>> MasterFactory::list() {
+std::vector<std::shared_ptr<Task>> TaskFactory::list() {
 
-    std::vector<std::shared_ptr<Master>> result;
+    std::vector<std::shared_ptr<Task>> result;
 
     for (auto m : idMap) {
 

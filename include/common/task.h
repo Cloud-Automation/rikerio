@@ -5,15 +5,15 @@
 #include <memory>
 #include <vector>
 
-#define MASTER_TOKEN_SIZE 12
+#define TASK_TOKEN_SIZE 12
 
 namespace RikerIO {
 
-class Master {
+class Task {
 
   public:
-    Master(std::string label, std::string token, int pid = -1) :
-        id(++Master::MasterCounter), label(label), token(token), pid(pid) {
+    Task(std::string label, std::string token, int pid = -1, bool track = false) :
+        id(++Task::TaskCounter), label(label), token(token), pid(pid), track(track) {
 
     }
 
@@ -33,33 +33,38 @@ class Master {
         return pid;
     }
 
+    const bool isTrack() {
+        return track;
+    }
+
   private:
 
-    static unsigned int MasterCounter;
+    static unsigned int TaskCounter;
 
     const unsigned int id;
     const std::string label;
     const std::string token;
     const int pid;
+    const bool track;
 
 };
 
 
-class MasterFactory {
+class TaskFactory {
 
   public:
 
-    MasterFactory();
+    TaskFactory();
 
-    Master& create(const std::string&, int);
+    Task& create(const std::string&, int, bool);
     bool remove(const std::string&);
     bool remove(unsigned int);
 
-    std::shared_ptr<Master> operator[] (const unsigned int id) {
+    std::shared_ptr<Task> operator[] (const unsigned int id) {
         return idMap[id];
     }
 
-    std::shared_ptr<Master> operator[] (const std::string& token) {
+    std::shared_ptr<Task> operator[] (const std::string& token) {
 
         for (auto m : idMap) {
 
@@ -74,15 +79,14 @@ class MasterFactory {
     }
 
 
-    std::vector<std::shared_ptr<Master>> list();
+    std::vector<std::shared_ptr<Task>> list();
 
   private:
 
     static std::string TokenCharacterList;
 
-    std::map<std::string, std::shared_ptr<Master>> tokenMap;
-    std::map<unsigned int, std::shared_ptr<Master>> idMap;
-
+    std::map<std::string, std::shared_ptr<Task>> tokenMap;
+    std::map<unsigned int, std::shared_ptr<Task>> idMap;
 
 };
 

@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
         jsonrpc::UnixDomainSocketClient socketClient("/var/run/rikerio/default/socket");
         StubClient rpcClient(socketClient);
 
-        Json::Value result = rpcClient.master_unregister(std::string(argv[1]));
+        Json::Value result = rpcClient.task_unregister(std::string(argv[1]));
 
         int code = result["code"].asInt();
 

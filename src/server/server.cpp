@@ -7,7 +7,7 @@ using namespace RikerIO;
 Server::Server(jsonrpc::UnixDomainSocketServer& server, std::string& id) :
     AbstractStubServer(server),
     id(id),
-    masterFactory(),
+    taskFactory(),
     memory(4096, id),
     allocOwnerFactory(),
     dataFactory(),
@@ -17,24 +17,24 @@ Server::Server(jsonrpc::UnixDomainSocketServer& server, std::string& id) :
 
 }
 
-Json::Value Server::master_register(const std::string& name, int pid) {
+Json::Value Server::task_register(const std::string& name, int pid, bool track) {
 
-    printf("master.register called with args %s and %d.\n", name.c_str(), pid);
+    printf("task.register called with args %s, %d and %d.\n", name.c_str(), pid, track);
 
     Json::Value result;
 
     try {
 
-        Master& master = masterFactory.create(name, pid);
+        Task& task = taskFactory.create(name, pid, track);
 
-        printf("master.register created new master with token %s and id %d.\n", master.getToken().c_str(), master.getId());
+        printf("task.register created new master with token %s and id %d.\n", task.getToken().c_str(), task.getId());
 
         result["code"] = RikerIO::NO_ERROR;
-        result["data"] = master.getToken(); // token
+        result["data"] = task.getToken(); // token
 
     } catch (RikerIO::GenerateTokenException& e) {
 
-        printf("master.register failed, master token could not be created.\n");
+        printf("task.register failed, master token could not be created.\n");
 
         result["code"] = GENTOKEN_ERROR;
         result["data"] = "";
@@ -45,35 +45,38 @@ Json::Value Server::master_register(const std::string& name, int pid) {
     return result;
 
 }
-Json::Value Server::master_unregister(const std::string& token) {
+Json::Value Server::task_unregister(const std::string& token) {
 
-    printf("master.unregister called with token %s\n", token.c_str());
+    printf("task.unregister called with token %s\n", token.c_str());
 
     Json::Value result;
 
-    if (masterFactory.remove(token)) {
+    /* ToDo : remove data associated with this task */
 
-        printf("master.unregister successfull.\n");
+    /* ToDo : remove allocations associated with this task */
 
-        result["code"] = RikerIO::Error::NO_ERROR;
+    if (!taskFactory.remove(token)) {
+        printf("task.unregister not unsuccessfull.\n");
 
+        result["code"] = RikerIO::Error::NOTFOUND_ERROR;
         return result;
-
     }
 
-    printf("master.unregister not unsuccessfull.\n");
+    printf("task.unregister successfull.\n");
 
-    result["code"] = RikerIO::Error::NOTFOUND_ERROR;
+    result["code"] = RikerIO::Error::NO_ERROR;
+
     return result;
+
 
 }
 
 
-Json::Value Server::master_list() {
+Json::Value Server::task_list() {
 
-    printf("master.list called\n");
+    printf("task.list called\n");
 
-    std::vector<std::shared_ptr<RikerIO::Master>> list = masterFactory.list();
+    std::vector<std::shared_ptr<RikerIO::Task>> list = taskFactory.list();
 
     Json::Value result;
     Json::Value resList = Json::arrayValue;
@@ -90,30 +93,31 @@ Json::Value Server::master_list() {
     result["code"] = 0;
     result["data"] = resList;
 
-    printf("master.list returning list of %ld master labels.\n", list.size());
+    printf("task.list returning list of %ld master labels.\n", list.size());
 
     return result;
 
 }
 
 
-Json::Value Server::alloc(int size, const std::string& token) { }
-Json::Value Server::dealloc(int offset, const std::string& token) { }
+Json::Value Server::memory_alloc(int size, const std::string& token) { }
+Json::Value Server::memory_dealloc(int offset, const std::string& token) { }
+Json::Value Server::memory_inspect() { }
 
 Json::Value Server::data_create(const Json::Value& data, const std::string& id, const std::string& token) {
 
     Json::Value result;
 
-    std::shared_ptr<Master> master = masterFactory[token];
+    std::shared_ptr<Task> task = taskFactory[token];
 
-    if (!master) {
+    if (!task) {
         result["code"] = RikerIO::Error::UNAUTHORIZED_ERROR;
         return result;
     }
 
     /* create ownership first */
 
-    if (!dataOwnerFactory.assign(id, master->getId())) {
+    if (!dataOwnerFactory.assign(id, task->getId())) {
         result["code"] = RikerIO::Error::UNAUTHORIZED_ERROR;
         return result;
     }
@@ -140,9 +144,9 @@ Json::Value Server::data_remove(const std::string& id, const std::string& token)
 
     Json::Value result;
 
-    std::shared_ptr<Master> master = masterFactory[token];
+    std::shared_ptr<Task> task = taskFactory[token];
 
-    if (!master) {
+    if (!task) {
         result["code"] = RikerIO::Error::UNAUTHORIZED_ERROR;
         return result;
     }
@@ -157,7 +161,7 @@ Json::Value Server::data_remove(const std::string& id, const std::string& token)
         return result;
     }
 
-    if (ownerId != master->getId()) {
+    if (ownerId != task->getId()) {
         result["code"] = RikerIO::Error::UNAUTHORIZED_ERROR;
         return result;
     }
@@ -205,3 +209,4 @@ Json::Value Server::link_add(const std::string& dataId, const std::string& linkI
 Json::Value Server::link_remove(const std::string& dataId, const std::string& linkId) { }
 Json::Value Server::link_list(const std::string& pattern) { }
 Json::Value Server::link_get(const std::string& id) { }
+Json::Value Server::link_updates(const std::string& token) { }

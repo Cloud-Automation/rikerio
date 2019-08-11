@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
         jsonrpc::UnixDomainSocketClient socketClient("/var/run/rikerio/default/socket");
         StubClient rpcClient(socketClient);
 
-        Json::Value result = rpcClient.master_list();
+        Json::Value result = rpcClient.task_list();
 
         int code = result["code"].asInt();
 

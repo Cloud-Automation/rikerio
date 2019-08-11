@@ -23,19 +23,9 @@ let g:autoformat_autoindent = 0
 let g:autoformat_retab = 0
 let g:autoformat_remove_trailing_spaces = 0
 
-let g:syntastic_c_checkers = ['gcc']
-
-let g:syntastic_always_populate_loc_list = 1
-let g:syntastic_auto_loc_list = 1
-let g:syntastic_check_on_open = 0
-let g:syntastic_check_on_wq = 0
-
-let g:syntastic_c_include_dirs = ['build/debug', 'build/debug/include', 'include']
-let g:syntastic_c_check_header = 0
-let g:syntastic_c_compiler_options = '-Wall -Wextra -Werror -Wuninitialized'
-
-autocmd BufNewFile,BufRead *.test.cpp,*.mock.c let g:syntastic_cpp_compiler_options = '-D__testing=1'
-
 let g:formatdef_astyle_google_cpp = '"astyle --style=google"'
 let g:formatters_cpp = ['astyle_google_cpp']
+
+let g:ale_linters = { 'cpp' : ['g++'] }
+let g:ale_cpp_gcc_options = '-Iinclude -Ibuild/debug/gtest-install/include -Ibuild/debug/include -Itest -Wall -pedantic -Wextra -std=c++11'
 

@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <string>
 #include <map>
+#include <set>
 
 namespace RikerIO {
 
@@ -15,10 +16,10 @@ class Memory {
      * @param memory size
      * @param profile id
      */
-    Memory(size_t, std::string);
+    Memory(unsigned int, std::string);
     ~Memory();
 
-    unsigned int alloc(size_t);
+    unsigned int alloc(unsigned int);
     bool dealloc(unsigned int);
 
     /**
@@ -31,12 +32,22 @@ class Memory {
 
   private:
 
-    size_t size;
+    class Area {
+      public:
+        unsigned int offset;
+        unsigned int size;
+        friend bool operator<(const Area& lhs, const Area& rhs)  {
+            return lhs.offset < rhs.offset;
+        }
+    };
+
+    unsigned int size;
     std::string id;
     void* ptr;
     std::string filename;
 
-    std::map<unsigned int, size_t> allocMap;
+    std::map<unsigned int, unsigned int> allocMap;
+    std::set<Area> freeSet;
 
 };
 

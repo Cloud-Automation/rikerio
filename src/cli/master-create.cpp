@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
         jsonrpc::UnixDomainSocketClient socketClient("/var/run/rikerio/" + profile + "/socket");
         StubClient rpcClient(socketClient);
 
-        Json::Value result = rpcClient.master_register(label, -1);
+        Json::Value result = rpcClient.task_register(label, -1, false);
 
         int code = result["code"].asInt();
         std::string token = result["data"].asString();
