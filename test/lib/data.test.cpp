@@ -49,3 +49,64 @@ TEST(LibraryMemory, CreateData) {
     }
 
 }
+
+TEST(LibraryMemory, CreateDataOutOfScope) {
+
+    MockClient mClient;
+
+    EXPECT_CALL(mClient, task_register("taskName", -1, false))
+    .Times(1)
+    .WillOnce(Return("someToken"));
+
+    EXPECT_CALL(mClient, memory_alloc(100, "someToken"))
+    .Times(1)
+    .WillOnce(Return(123));
+
+    RikerIO::Data dA(RikerIO::Datatype::UINT8, 224, 0, 8);
+
+    RikerIO::Client::Profile p(mClient, "default");
+    RikerIO::Client::Task& task = p.registerTask("taskName");
+    RikerIO::Client::Allocation& alloc = task.alloc(100);
+
+    try {
+
+        alloc.createData<bool>(99,0);
+        alloc.createData<uint8_t>(100,0);
+
+        FAIL();
+
+    } catch (RikerIO::OutOfScopeError& e) {
+        return;
+    } catch (...) {
+        FAIL();
+    }
+
+}
+
+
+TEST(LibraryMemory, GetData) {
+
+    MockClient mClient;
+
+    EXPECT_CALL(mClient, task_register("taskName", -1, false))
+    .Times(1)
+    .WillOnce(Return("someToken"));
+
+    RikerIO::Data dA(RikerIO::Datatype::UINT8, 224, 0, 8);
+
+    RikerIO::Client::Profile p(mClient, "default");
+    RikerIO::Client::Task& task = p.registerTask("taskName");
+
+    try {
+
+        task.getData("testDataIdA");
+
+        FAIL();
+
+    } catch (RikerIO::OutOfScopeError& e) {
+        return;
+    } catch (...) {
+        FAIL();
+    }
+
+}

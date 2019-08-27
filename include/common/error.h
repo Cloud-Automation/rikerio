@@ -55,6 +55,12 @@ class OutOfSpaceError : public std::runtime_error {
     OutOfSpaceError() : runtime_error("")  { }
 };
 
+class OutOfScopeError : public std::runtime_error {
+  public:
+    OutOfScopeError() : runtime_error("")  { }
+};
+
+
 
 }
 

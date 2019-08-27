@@ -23,6 +23,7 @@ class Task {
     void dealloc(Allocation&);
 
     void registerData(RikerIO::Data&, std::string id);
+    void getData(std::string id);
 
     unsigned int getId();
     AbstractClient& getClient();
