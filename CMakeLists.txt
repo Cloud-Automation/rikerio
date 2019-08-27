@@ -43,7 +43,11 @@ file(GLOB HEADERS ${INC}/*.h)
 file(GLOB SOURCES ${SRC}/*.c)
 
 
-add_library(rikerio-lib SHARED ${SRC}/rikerio.c)
+if (${BUILD_STATIC})
+    add_library(rikerio-lib STATIC ${SRC}/rikerio.c)
+else()
+    add_library(rikerio-lib SHARED ${SRC}/rikerio.c)
+endif()
 set_target_properties(rikerio-lib PROPERTIES OUTPUT_NAME rikerio)
 set_property(TARGET rikerio-lib PROPERTY C_STANDARD 99)
 set_property(TARGET rikerio-lib PROPERTY PUBLIC_HEADER ${CMAKE_CURRENT_BINARY_DIR}/include/rikerio.h)
@@ -84,14 +88,14 @@ add_executable(rio-master ${SRC}/master.c)
 target_include_directories(rio-master PUBLIC ${INC} ${PROJECT_BINARY_DIR})
 target_link_libraries(rio-master rt dl rikerio-lib)
 
+if (NOT ${BUILD_STATIC})
 install (TARGETS rikerio-lib rio-profile-create rio-alias-add rio-alias-rm rio-alias-inspect rio-master
     LIBRARY DESTINATION lib
     PUBLIC_HEADER DESTINATION include
     RUNTIME DESTINATION bin)
 
-
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rio DESTINATION bin)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rikerio@.service DESTINATION /lib/systemd/system)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rio-completion.bash DESTINATION /etc/bash_completion.d)
 #install(CODE "execute_process(COMMAND ${CMAKE_CURRENT_BINARY_DIR}/install.sh ${CMAKE_INSTALL_PREFIX})")
-
+endif()
