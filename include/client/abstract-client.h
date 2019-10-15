@@ -12,10 +12,12 @@ namespace RikerIO {
 class AbstractClient {
   public:
 
+    using TaskList = std::set<std::string>;
+
     virtual ~AbstractClient() { };
     virtual std::string task_register(const std::string& name, int pid, bool track)  = 0;
     virtual void task_unregister(const std::string& token) = 0;
-    virtual std::set<std::string> task_list() = 0;
+    virtual void task_list(TaskList&) = 0;
     virtual unsigned int memory_alloc(int size, const std::string& token) = 0;
     virtual void memory_dealloc(int offset, const std::string& token) = 0;
     /*virtual Json::Value memory_inspect() = 0; */

@@ -49,6 +49,10 @@ include_directories(${PROJECT_BINARY_DIR}/include)
 
 # add rikerio library first
 
+add_library(rikerio ${SRC}/client/client.cpp)
+target_include_directories(rikerio PUBLIC ${INC}/client ${INC}/common ${JSONCPP_INC})
+add_dependencies(rikerio ${JSONRPC_PREFIX} ${JSONCPP_PREFIX})
+
 #[[
 add_executable(rio-server
     ${SRC}/server/server.cpp
