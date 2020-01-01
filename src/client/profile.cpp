@@ -1,3 +1,4 @@
+#if 0
 #include "client/profile.h"
 #include "config.h"
 #include "common/error.h"
@@ -68,3 +69,5 @@ std::vector<std::shared_ptr<Allocation>> Profile::getLocalAlloc() {
 
 }
 */
+
+#endif

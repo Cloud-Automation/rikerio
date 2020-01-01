@@ -15,6 +15,7 @@
 
 std::string profile = "default";
 unsigned int size = 4096;
+unsigned int cycle = 10000;
 mode_t dirMode = 0770;
 unsigned int running = 1;
 
@@ -22,12 +23,15 @@ unsigned int running = 1;
 static struct option long_options[] = {
     { "id", required_argument, NULL, 'i' },
     { "size", required_argument, NULL, 's' },
+    { "cycle", required_argument, NULL, 'c' },
     { "help", no_argument, NULL, 'h' },
     { "version", no_argument, NULL, 'v' },
     { NULL, 0, NULL, 0 }
 };
 
 static void signalHandler(int sigNo) {
+
+    (void)(sigNo);
 
     running = 0;
 
@@ -39,6 +43,7 @@ static void printHelp() {
     printf("Options:\n");
     printf("\t-i|--id\t\tName of the memory profile (defaults to 'default').\n");
     printf("\t-s|--size\tMemory Size (defaults to 4096 Bytes).\n");
+    printf("\t-c|--cycle\tDefault Cycle (defaults to 10.000 us).\n");
     printf("\t-v|--version\tPrint version.\n");
     printf("\t-h|--help\tPrint this help.\n\n");
     printf("Created by Stefan Pöter<rikerio@cloud-automation.de>.\n");
@@ -46,7 +51,7 @@ static void printHelp() {
 }
 
 static void printVersion() {
-    printf("%s\n", VERSION_SHORT);
+    printf("%s\n", RIO_VERSION);
 }
 
 
@@ -55,7 +60,7 @@ static int parseArguments(int argc, char* argv[]) {
     while (1) {
 
         int option_index = 0;
-        int c = getopt_long(argc, argv, "i::hv", long_options, &option_index);
+        int c = getopt_long(argc, argv, "i::s::c::hv", long_options, &option_index);
 
         if (c == -1) {
             break;
@@ -73,7 +78,14 @@ static int parseArguments(int argc, char* argv[]) {
         case 's':
             size = atoi(optarg);
             if (errno == ERANGE) {
-                printf("Error parsing size\n");
+                printf("Error parsing size.\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case 'c':
+            cycle = atoi(optarg);
+            if (errno == ERANGE) {
+                printf("Error parsing cycle.\n");
                 exit(EXIT_FAILURE);
             }
             break;
@@ -165,19 +177,14 @@ void tearDown(int exitCode) {
 
     /* remove shared memory file */
 
-    std::string tmpRootFolder = "/var/run/rikerio";
     std::string perRootFolder = "/var/lib/rikerio";
-    std::string tmpProfileFolder = tmpRootFolder + "/" + profile;
     std::string perProfileFolder = perRootFolder + "/" + profile;
 
-    std::string socketFile = tmpProfileFolder + "/socket";
+    std::string socketFile = perProfileFolder + "/socket";
 
     if (unlink(socketFile.c_str()) == -1) {
         printf("Error removing socket file %s.\n", strerror(errno));
     }
-
-    rmdir(tmpProfileFolder.c_str());
-    rmdir(tmpRootFolder.c_str());
 
     systemd_notify("STOPPING=1");
 
@@ -197,23 +204,21 @@ int main(int argc, char** argv) {
 
     parseArguments(argc, argv);
 
-    std::string tmpRootFolder = "/var/run/rikerio";
     std::string perRootFolder = "/var/lib/rikerio";
-    std::string tmpProfileFolder = tmpRootFolder + "/" + profile;
     std::string perProfileFolder = perRootFolder + "/" + profile;
 
-    std::string socketFile = tmpProfileFolder + "/socket";
+    std::string socketFile = perProfileFolder + "/socket";
 
-    checkAndCreateFolder(tmpRootFolder, dirMode);
+    checkAndCreateFolder(perRootFolder, dirMode);
 
-    if (applyGroupAndRights(tmpRootFolder, dirMode) != 1) {
+    if (applyGroupAndRights(perRootFolder, dirMode) != 1) {
         fprintf(stderr, "Error applying rights to Temp. Root Folder (%s).\n", strerror(errno));
         tearDown(EXIT_FAILURE);
     }
 
-    checkAndCreateFolder(tmpProfileFolder, dirMode);
+    checkAndCreateFolder(perProfileFolder, dirMode);
 
-    if (applyGroupAndRights(tmpProfileFolder, dirMode) != 1) {
+    if (applyGroupAndRights(perProfileFolder, dirMode) != 1) {
         fprintf(stderr, "Error applying rights Temp. Profle Folder (%s).\n", strerror(errno));
         tearDown(EXIT_FAILURE);
     }
@@ -224,7 +229,7 @@ int main(int argc, char** argv) {
         jsonrpc::UnixDomainSocketServer socket(socketFile, 1);
 
 
-        RikerIO::Server server(socket, profile);
+        RikerIO::Server server(socket, profile, size, cycle);
 
         if (server.StartListening()) {
 

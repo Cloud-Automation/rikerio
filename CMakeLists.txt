@@ -4,12 +4,13 @@ set (CMAKE_CXX_STANDARD 11)
 include(ExternalProject)
 
 option(BUILD_STATIC "Compile as static library."    OFF)
-option(WITH_TESTS   "Build with tests"              ON)
+option(WITH_TESTS   "Build with tests"              OFF)
 option(TARGET_ARCH  "Build for target"              "x86")
 
 set(CMAKE_MODULE_PATH   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules ${CMAKE_MODULE_PATH})
 set(SRC                 ${PROJECT_SOURCE_DIR}/src)
-set(INC                 ${PROJECT_BINARY_DIR}/include)
+set(INC_BINARY          ${PROJECT_BINARY_DIR}/include)
+set(INC                 ${PROJECT_SOURCE_DIR}/include)
 set(TST                 ${PROJECT_SOURCE_DIR}/test)
 
 
@@ -20,7 +21,7 @@ if ("${TARGET_ARCH}" STREQUAL "arm")
 endif()
 
 if (${WITH_TESTS})
-    add_subdirectory(${PROJECT_SOURCE_DIR}/test)
+    #    add_subdirectory(${PROJECT_SOURCE_DIR}/test)
 endif()
 
 
@@ -50,35 +51,42 @@ include_directories(${PROJECT_BINARY_DIR}/include)
 # add rikerio library first
 
 add_library(rikerio ${SRC}/client/client.cpp)
-target_include_directories(rikerio PUBLIC ${INC}/client ${INC}/common ${JSONCPP_INC})
+target_include_directories(rikerio PUBLIC ${INC} ${INC_BINARY} ${JSONCPP_INC})
 add_dependencies(rikerio ${JSONRPC_PREFIX} ${JSONCPP_PREFIX})
 
-#[[
-add_executable(rio-server
+add_executable(rikerio-server
+    ${SRC}/common/utils.cpp
     ${SRC}/server/server.cpp
     ${SRC}/server/server-main.cpp
-    ${SRC}/common/task.cpp
-    ${SRC}/common/memory.cpp
-    ${SRC}/common/data.cpp)
+    ${SRC}/server/memory.cpp
+    ${SRC}/server/data.cpp
+    ${SRC}/server/data-map.cpp
+    ${SRC}/server/link-map.cpp
+)
+target_include_directories(rikerio-server PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
+target_link_libraries(rikerio-server rt dl ${JSONRPC_LIB_SERVER} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
+add_dependencies(rikerio-server ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
 
-target_include_directories(rio-server PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
-target_link_libraries(rio-server rt dl ${JSONRPC_LIB_SERVER} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
-add_dependencies(rio-server ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
 
-add_executable(rio-task-register ${SRC}/cli/master-create.cpp)
-target_include_directories(rio-task-register PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
-target_link_libraries(rio-task-register rt dl ${JSONRPC_LIB_CLIENT} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
-add_dependencies(rio-task-register ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
+add_executable(rio 
+    ${SRC}/common/utils.cpp
+    ${SRC}/client/client.cpp
+    ${SRC}/cli/rio.cpp 
+    ${SRC}/cli/config-get.cpp
+    ${SRC}/cli/memory-alloc.cpp
+    ${SRC}/cli/memory-dealloc.cpp
+    ${SRC}/cli/memory-list.cpp
+    ${SRC}/cli/data-create.cpp
+    ${SRC}/cli/data-list.cpp
+    ${SRC}/cli/data-remove.cpp
+    ${SRC}/cli/link-add.cpp
+    ${SRC}/cli/link-list.cpp)
 
-add_executable(rio-task-unregister ${SRC}/cli/master-remove.cpp)
-target_include_directories(rio-task-unregister PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
-target_link_libraries(rio-task-unregister rt dl ${JSONRPC_LIB_CLIENT} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
-add_dependencies(rio-task-unregister ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
+target_include_directories(rio PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
+target_link_libraries(rio rt dl ${JSONRPC_LIB_CLIENT} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
+add_dependencies(rio ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
 
-add_executable(rio-task-list ${SRC}/cli/master-list.cpp)
-target_include_directories(rio-task-list PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
-target_link_libraries(rio-task-list rt dl ${JSONRPC_LIB_CLIENT} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
-add_dependencies(rio-task-list ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
+#[[
 
 # rio memory alloc {--token=...} {size}
 # rio memory dealloc {--token=...} {offset}

@@ -1,212 +1,417 @@
 #include "server/server.h"
 #include "common/error.h"
-#include <iostream>
+#include "version.h"
+#include <fnmatch.h>
+
 
 using namespace RikerIO;
 
-Server::Server(jsonrpc::UnixDomainSocketServer& server, std::string& id) :
+std::mutex Server::alloc_mutex;
+std::mutex Server::persistent_mutex;
+
+Server::Server(
+    jsonrpc::UnixDomainSocketServer& server,
+    const std::string& id,
+    unsigned int size,
+    unsigned int cycle) :
     AbstractStubServer(server),
     id(id),
-    taskFactory(),
-    memory(4096, id),
-    allocOwnerFactory(),
-    dataFactory(),
-    dataOwnerFactory() {
+    size(size),
+    cycle(cycle),
+    memory(size, std::string(FOLDER) + "/" + id + "/" + SHM_FILENAME),
+    dataMap(memory),
+    linkMap(std::string(FOLDER) + "/" + id + "/" + LINKS_FILENAME) {
 
 
+    linkMap.deserialize();
 
-}
-
-Json::Value Server::task_register(const std::string& name, int pid, bool track) {
-
-    printf("task.register called with args %s, %d and %d.\n", name.c_str(), pid, track);
-
-    Json::Value result;
-
-    try {
-
-        Task& task = taskFactory.create(name, pid, track);
-
-        printf("task.register created new master with token %s and id %d.\n", task.getToken().c_str(), task.getId());
-
-        result["code"] = RikerIO::NO_ERROR;
-        result["data"] = task.getToken(); // token
-
-    } catch (RikerIO::GenerateTokenException& e) {
-
-        printf("task.register failed, master token could not be created.\n");
-
-        result["code"] = GENTOKEN_ERROR;
-        result["data"] = "";
-
-
-    }
-
-    return result;
-
-}
-Json::Value Server::task_unregister(const std::string& token) {
-
-    printf("task.unregister called with token %s\n", token.c_str());
-
-    Json::Value result;
-
-    /* ToDo : remove data associated with this task */
-
-    /* ToDo : remove allocations associated with this task */
-
-    if (!taskFactory.remove(token)) {
-        printf("task.unregister not unsuccessfull.\n");
-
-        result["code"] = RikerIO::Error::NOTFOUND_ERROR;
-        return result;
-    }
-
-    printf("task.unregister successfull.\n");
-
-    result["code"] = RikerIO::Error::NO_ERROR;
-
-    return result;
-
+    persistentChangeCount = 0;
+    persistentThreadRunning = true;
+    persistentThread = std::make_shared<std::thread>(std::bind(&Server::makeLinksPersistent, this));
 
 }
 
+Server::~Server() {
 
-Json::Value Server::task_list() {
+    persistentThreadRunning = false;
+    persistentThread->join();
 
-    printf("task.list called\n");
+}
 
-    std::vector<std::shared_ptr<RikerIO::Task>> list = taskFactory.list();
+void Server::get_config(ConfigResponse& response) {
 
-    Json::Value result;
-    Json::Value resList = Json::arrayValue;
+    response.profile = id;
+    response.version = std::string(RIO_VERSION_STRING);
+    response.shmFile = std::string(FOLDER) + "/" + id + "/" + SHM_FILENAME;
+    response.size = size;
+    response.defaultCycle = cycle;
 
+}
 
-    for (auto m : list) {
+void Server::memory_alloc(int size, MemoryAllocResponse& response) {
 
-        Json::Value mObj(m->getLabel());
+    const std::lock_guard<std::mutex> lock(Server::alloc_mutex);
 
-        resList.append(mObj);
+    if (size <= 0) {
+        throw ServerError(BAD_REQUEST, "Size musst be > 0.");
+    }
+
+    try  {
+
+        std::shared_ptr<MemoryArea> ma = memory.alloc(size);
+
+        response.offset = ma->getOffset();
+        response.token = ma->getToken();
+
+    } catch (Token::TokenException& e) {
+        throw ServerError(GENTOKEN_ERROR, "Internal Error (1).");
+    } catch (OutOfSpaceError& e) {
+        throw ServerError(OUTOFSPACE_ERROR, "Not enough memory for allocation.");
+    }
+
+}
+
+void Server::memory_dealloc(const std::string& token) {
+
+    /* get offset by token */
+
+    if (memory.getAreaFromToken(token) != nullptr) {
+        throw ServerError(UNAUTHORIZED_ERROR, "Token not found.");
+    }
+
+    std::shared_ptr<MemoryArea> maFromToken = memory.getAreaFromToken(token);
+    std::shared_ptr<MemoryArea> maFromDealloc = memory.dealloc(maFromToken->getOffset());
+
+    if (maFromDealloc == nullptr) {
+        throw ServerError(INTERNAL_ERROR, "Internal Error (1).");
+    }
+
+    dataMap.removeByRange(maFromToken->getOffset(), maFromToken->getSize());
+
+    /*    std::set<std::string> dataToBeRemoved;
+
+        for (auto a : dataMap) {
+
+            std::string id = a.first;
+            std::shared_ptr<RikerIO::Data> data = a.second;
+
+            if (data->getOffset() >= maFromToken->getOffset() &&
+                    data->getEnd() <= maFromToken->getEnd()) {
+                dataToBeRemoved.insert(id);
+            }
+
+        }
+
+        for (auto s : dataToBeRemoved) {
+            dataMap.erase(s);
+            dataTokenMap.erase(s);
+            dataMemoryMap.erase(s);
+        }
+    */
+}
+
+void Server::memory_list(MemoryListResponse& response) {
+
+    for (auto ma : memory) {
+        response.data.push_back(ma);
+    }
+
+}
+
+void Server::memory_get(int offset, MemoryGetResponse& response) {
+
+    if (offset < 0) {
+        throw ServerError(BAD_REQUEST, "Offset cannot be negative.");
+    }
+
+    for (auto ma : memory) {
+
+        if (ma->getOffset() != static_cast<unsigned int>(offset)) {
+            continue;
+        }
+
+        response.data = ma;
+
+        return;
 
     }
 
+    throw ServerError(NOTFOUND_ERROR, "Memory Area not found.");
+
+}
+
+void Server::data_create(
+    const std::string& token,
+    const std::string& id,
+    const DataCreateRequest& data) {
+
+    std::shared_ptr<MemoryArea> memArea = nullptr;
+    std::shared_ptr<Data> entry = nullptr;
+
+    bool hasToken = token.length() > 0;
+
+    if (!Data::isValidId(id)) {
+        throw ServerError(BAD_REQUEST, "Data ID is not valid.");
+    }
+
+    /* get offset by token */
+
+    if (hasToken) {
+
+        memArea = memory.getAreaFromToken(token);
+
+        if (!memArea) {
+            throw ServerError(UNAUTHORIZED_ERROR, "Token not found.");
+        }
+
+    }
+
+    std::shared_ptr<RikerIO::Data> d = std::make_shared<RikerIO::Data>(
+                                           data.type,
+                                           memArea ? data.offset + memArea->getOffset() : data.offset,
+                                           data.index,
+                                           data.size);
+
+    if (hasToken) {
+        dataMap.add(id, token, d);
+    } else {
+        dataMap.add(id, d);
+    }
+
+}
+
+void Server::data_remove(const std::string& pattern, const std::string& token, DataRemoveResponse& response) {
+
+    unsigned int count = 0;
+
+    for (auto d : dataMap) {
+
+        if (!Server::match(pattern, d.first)) {
+            continue;
+        }
+
+        bool removeSuccessfull = false;
+
+        if (token.length() == 0) {
+            removeSuccessfull = dataMap.remove(d.first);
+        } else {
+            removeSuccessfull = dataMap.remove(d.first, token);
+        }
+
+        /*        std::string dataToken = "";
+
+                if (dataTokenMap.find(d.first) != dataTokenMap.end()) {
+                    dataToken = dataTokenMap[d.first];
+                }
+
+                if (dataToken != "" && dataToken != token) {
+                    continue;
+                }
+        */
+        count += removeSuccessfull ? 1 : 0;
+
+        /*        dataMap.erase(d.first);
+                dataTokenMap.erase(d.first);
+                dataMemoryMap.erase(d.first);
+        */
+    }
+
+    response.count = count;
+
+}
+
+
+void Server::data_list(const std::string& pattern, DataListResponse& response) {
+
+    for (auto d : dataMap) {
+
+        if (!Server::match(pattern, d.first)) {
+            continue;
+        }
+
+        DataListResponseItem item;
+
+        std::shared_ptr<RikerIO::Data> data = d.second;
+
+        bool isPrivate = dataMap.isPrivate(d.first);
+
+        item.dId = d.first;
+        item.offset = data->getOffset();
+        item.index = data->getIndex();
+        item.size = data->getSize();
+        item.type = RikerIO::Utils::GetStringFromType(data->getType());
+        item.semaphore = dataMap.getSemaphore(d.first);
+        item.isPrivate = isPrivate;
+
+        response.list.push_back(item);
+
+    }
+
+}
+
+
+Json::Value Server::data_get(const std::string& dId) {
+
+    (void)(dId);
+
+    Json::Value result;
     result["code"] = 0;
-    result["data"] = resList;
-
-    printf("task.list returning list of %ld master labels.\n", list.size());
 
     return result;
 
 }
 
 
-Json::Value Server::memory_alloc(int size, const std::string& token) { }
-Json::Value Server::memory_dealloc(int offset, const std::string& token) { }
-Json::Value Server::memory_inspect() { }
+void Server::link_add(const std::string& linkname, std::vector<std::string>& data_ids, unsigned int& counter) {
 
-Json::Value Server::data_create(const Json::Value& data, const std::string& id, const std::string& token) {
+    const std::lock_guard<std::mutex> lock(persistent_mutex);
 
-    Json::Value result;
+    counter = 0;
 
-    std::shared_ptr<Task> task = taskFactory[token];
-
-    if (!task) {
-        result["code"] = RikerIO::Error::UNAUTHORIZED_ERROR;
-        return result;
+    for (std::string s : data_ids) {
+        if (linkMap.add(linkname, s)) {
+            counter += 1;
+        }
     }
 
-    /* create ownership first */
+    /* start persistent thread */
 
-    if (!dataOwnerFactory.assign(id, task->getId())) {
-        result["code"] = RikerIO::Error::UNAUTHORIZED_ERROR;
-        return result;
-    }
-
-    /* create database entry */
-
-    RikerIO::Data d(
-        RikerIO::Data::GetTypeFromString(data["datatype"].asString()),
-        data["byteOffset"].asUInt(),
-        data["bitOffset"].asUInt(),
-        data["bitSize"].asUInt());
-
-    if (dataFactory.create(id, d)) {
-        result["code"] = RikerIO::Error::NO_ERROR;
-        return result;
-    }
-
-    result["code"] = RikerIO::Error::DUPLICATE_ERROR;
-    return result;
+    persistentChangeCount += counter;
 
 }
 
-Json::Value Server::data_remove(const std::string& id, const std::string& token) {
+void Server::link_remove(const std::string& pattern, std::vector<std::string>& data_ids, unsigned int& counter) {
 
-    Json::Value result;
+    const std::lock_guard<std::mutex> lock(persistent_mutex);
 
-    std::shared_ptr<Task> task = taskFactory[token];
+    counter = 0;
 
-    if (!task) {
-        result["code"] = RikerIO::Error::UNAUTHORIZED_ERROR;
-        return result;
+    std::set<std::string> keys = linkMap.keys();
+
+    for (auto key : keys) {
+
+        if (!Server::match(pattern, key)) {
+
+            continue;
+
+        }
+
+        if (data_ids.size() == 0) {
+
+            counter += linkMap.remove(key);
+
+        } else {
+
+            for (auto data : data_ids) {
+                counter += linkMap.remove(key, data) ? 1 : 0;
+            }
+
+        }
     }
 
-    /* chcek ownership */
+    persistentChangeCount += counter;
 
-    unsigned int ownerId = 0;
-    try {
-        ownerId = dataOwnerFactory.getOwner(id);
-    } catch (RikerIO::NotFoundException& e) {
-        result["code"] = RikerIO::Error::NOTFOUND_ERROR;
-        return result;
-    }
+}
 
-    if (ownerId != task->getId()) {
-        result["code"] = RikerIO::Error::UNAUTHORIZED_ERROR;
-        return result;
-    }
 
-    /* remove ownership */
+void Server::link_list(const std::string& pattern, AbstractStubServer::LinkListResponse& response) {
 
-    if (!dataOwnerFactory.remove(id)) {
-        printf("Error removing owner of data %s, that should not happen.\n", id.c_str());
-    }
+    const std::lock_guard<std::mutex> lock(persistent_mutex);
 
-    /* remove data */
+    linkMap.iterate([&](const std::string& key, const std::string& data_id) {
 
-    if (!dataFactory.remove(id)) {
-        printf("Error removing data %s, that should not happen.\n", id.c_str());
-    }
+        if (!Server::match(pattern, key)) {
+            return;
+        }
 
-    result["code"] = RikerIO::Error::NO_ERROR;
-    return result;
+        LinkListItem linkItem;
 
+        linkItem.key = key;
+
+        auto d = dataMap.find(data_id);
+
+        if (d != dataMap.end()) {
+
+            DataListResponseItem dataItem;
+
+            std::shared_ptr<RikerIO::Data> data = d->second;
+
+            bool isPrivate = dataMap.isPrivate(d->first);
+
+            dataItem.dId = d->first;
+            dataItem.offset = data->getOffset();
+            dataItem.index = data->getIndex();
+            dataItem.size = data->getSize();
+            dataItem.type = RikerIO::Utils::GetStringFromType(data->getType());
+            dataItem.semaphore = dataMap.getSemaphore(d->first);
+            dataItem.isPrivate = isPrivate;
+
+            linkItem.has_data = true;
+            linkItem.data_item = dataItem;
+
+        } else {
+
+            linkItem.has_data = false;
+            linkItem.data_item.dId = data_id;
+
+        }
+
+        response.list.push_back(linkItem);
+
+    });
 
 
 }
 
-Json::Value Server::data_list(const std::string& pattern) {
+
+Json::Value Server::link_get(const std::string& id) {
+
+    (void)(id);
 
     Json::Value result;
-
-    std::vector<std::string> list = dataFactory.filter(pattern);
-
     result["code"] = 0;
-    result["data"] = Json::arrayValue;
-
-    unsigned int index = 0;
-    for (auto l : list) {
-        result["data"][index++] = l;
-    }
 
     return result;
 
+
 }
 
+bool Server::match(const std::string& pattern, const std::string& target) {
 
-Json::Value Server::data_get(const std::string& id) { }
-Json::Value Server::link_add(const std::string& dataId, const std::string& linkId) { }
-Json::Value Server::link_remove(const std::string& dataId, const std::string& linkId) { }
-Json::Value Server::link_list(const std::string& pattern) { }
-Json::Value Server::link_get(const std::string& id) { }
-Json::Value Server::link_updates(const std::string& token) { }
+    int res = fnmatch(pattern.c_str(), target.c_str(), 0);
+
+    return res == 0;
+
+}
+
+void Server::makeLinksPersistent() {
+
+    while (persistentThreadRunning) {
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        if (persistentChangeCount == 0) {
+            continue;
+        }
+
+        {
+
+            const std::lock_guard<std::mutex> lock(persistent_mutex);
+
+            linkMap.serialize();
+
+            persistentChangeCount = 0;
+
+        }
+
+    }
+
+    {
+
+        const std::lock_guard<std::mutex> lock(persistent_mutex);
+
+        linkMap.serialize();
+
+    }
+
+}

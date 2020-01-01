@@ -1,70 +1,60 @@
 [
   {
-    "name": "task.register",
-    "params": {
-      "name": "string1",
-      "pid": 1,
-      "track": false
-    },
-    "returns": {
-      "code": 0,
-      "data": "string2"
-    }
-  },
-  {
-    "name": "task.unregister",
-    "params": {
-      "token": "token"
-    },
-    "returns": {
-      "code": 0
-    }
-  },
-  {
-    "name": "task.list",
-    "returns": {
-      "code": 0,
-      "data": [ "taskName1" ]
-    }
-  },
-  {
     "name": "memory.alloc",
     "params": {
-      "token": "token",
       "size": 0
     },
     "returns": {
       "code": 1,
-      "data": 2
+      "data": {
+        "token": "generatedToken",
+        "mId": 2,
+        "sId": 3,
+        "offset": 4
+      }
     }
   },
   {
     "name": "memory.dealloc",
     "params": {
-      "token": "token",
-      "offset": 0
+      "token": "token"
     },
     "returns": {
       "code": 1
     }
   },
   {
-    "name": "memory.inspect",
+    "name": "memory.list",
     "returns": {
         "code": 0,
-        "data": [ { "offset": 0, "size": 16, "task": "taskName" } ]
+        "data": [ { "offset": 0, "size": 16, "semaphore": 0 } ]
+    }
+  },
+  {
+    "name": "memory.get",
+    "params": {
+      "mId": 0,
+    },
+    "returns" : {
+      "code": 1,
+      "data": {
+        "mId": 2,
+        "file": "absolutePath",
+        "offset": 3,
+        "size": 4,
+        "sId": 5
+      }
     }
   },
   {
     "name": "data.create",
     "params": {
-      "token": "string1",
-      "id": "string2",
+      "dId": "dataIdLabel",
       "data" : {
-        "datatype": 0,
-        "byteOffset": 1,
-        "bitOffset": 2,
-        "bitSize": 3
+        "type": "dataType",
+        "offset": 1,
+        "index": 2,
+        "size": 3
       }
     },
     "returns": {
@@ -74,8 +64,8 @@
   {
     "name": "data.remove",
     "params": {
-      "token": "string1",
-      "id": "string2"
+      "dId": "dataIdLabel",
+      "secret": "string"
     },
     "returns": {
       "code": 0
@@ -84,36 +74,46 @@
   {
     "name": "data.list",
     "params": {
-      "pattern": "string1"
+      "pattern": "pattern"
     },
     "returns": {
       "code": 0,
-      "data": [ "string2" ]
+      "data": [ 
+          { 
+            "dId": "dataIdLabel", 
+            "mId": 0, 
+            "sId": 0,
+            "type": "datatype", 
+            "offset": 0, 
+            "index": 0, 
+            "size": 0 
+          } 
+      ]
     }
   },
   {
     "name": "data.get",
     "params": {
-      "id": "string1",
-      "token": "string2"
+      "dId": "string1"
     },
     "returns" : {
       "code": 0,
       "data": {
         "id": "string3",
-        "datatype": 0,
-        "byteOffset": 1,
-        "bitOffset": 2,
-        "bitSize": 3,
-        "master": "string4"
+        "type": "datatype",
+        "offset": 1,
+        "index": 2,
+        "size": 3,
+        "sId": 4,
+        "tId": 5
       }
     }
   },
   {
     "name": "link.add",
     "params": {
-      "linkId": "string1",
-      "dataId": "string2"
+      "lId": "string1",
+      "dId": "string2"
     },
     "returns": {
       "code": 0
@@ -148,24 +148,14 @@
       "code": 0,
       "data": [
         {
-          "id": "string1",
-          "datatype": 1,
-          "byteOffset": 2,
-          "bitOffset": 3,
-          "bitSize": 4,
-          "master": "string3"
+          "dId": "string1",
+          "type": "datatype",
+          "offset": 2,
+          "index": 3,
+          "size": 4,
+          "sId": 5
         }
       ]
-    }
-  },
-  {
-    "name": "link.updates",
-    "params": {
-        "token": "string1"
-    },
-    "returns": {
-        "code": 0,
-        "data": [ "linkId1" ]
     }
   }
 ]

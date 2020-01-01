@@ -1,7 +1,6 @@
 
 #ifndef __JSONRPC_CPP_CLIENT_H__
 #define __JSONRPC_CPP_CLIENT_H__
-
 #include "json/json.h"
 #include "jsonrpccpp/client.h"
 #include "client/abstract-client.h"
@@ -10,23 +9,29 @@ namespace RikerIO {
 
 class Client : public AbstractClient, public jsonrpc::Client {
   public:
-    Client(jsonrpc::IClientConnector);
+    Client(jsonrpc::IClientConnector&);
 
-    std::string task_register(const std::string& name, int pid, bool track);
-    void        task_unregister(const std::string& token);
-    void        task_list(TaskList&);
-    Json::Value memory_alloc(int size, const std::string& token);
-    Json::Value memory_dealloc(int offset, const std::string& token);
-    Json::Value memory_inspect();
-    Json::Value data_create(const Json::Value& data, const std::string& id, const std::string& token);
-    Json::Value data_remove(const std::string& id, const std::string& token);
-    Json::Value data_list(const std::string& id);
+    void config_get(AbstractClient::ConfigGetResponse&);
+
+    void memory_alloc(unsigned int size, AbstractClient::MemoryAllocResponse&);
+    void memory_dealloc(const std::string& token);
+    void memory_list(AbstractClient::MemoryListResponse&);
+
+    void data_create(const std::string& token, const std::string& id, DataCreateRequest req);
+    void data_remove(const std::string& token, const std::string& pattern, unsigned int& resCount);
+    void data_list(const std::string& pattern, DataListResponse&);
+
+    void link_add(const std::string& key, std::vector<std::string>& list, unsigned int&);
+    void link_list(const std::string& pattern, LinkListResponse&);
+
+#if 0
+
+
     Json::Value data_get(const std::string& id, const std::string& token);
-    Json::Value link_add(const std::string& dataId, const std::string& linkId);
     Json::Value link_remove(const std::string& dataId, const std::string& linkId);
-    Json::Value link_list(const std::string& pattern);
     Json::Value link_get(const std::string& id);
     Json::Value link_updates(const std::string& token);
+#endif
 
 };
 

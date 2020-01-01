@@ -2,50 +2,107 @@
 #define __RIO_SERVER_H__
 
 #include "server/abstractstubserver.h"
-#include "common/task.h"
-#include "common/owner.h"
-#include "common/memory.h"
-#include "common/data.h"
+
+#include "server/memory.h"
+#include "server/data.h"
+#include "server/data-map.h"
+#include "server/link-map.h"
 
 #include <jsonrpccpp/server/connectors/unixdomainsocketserver.h>
 #include <string>
+
+#define FOLDER "/var/lib/rikerio"
+#define LINKS_FILENAME "links"
+#define SHM_FILENAME "shm"
+
 
 namespace RikerIO {
 
 class Server : public AbstractStubServer {
 
   public:
-    Server(jsonrpc::UnixDomainSocketServer&, std::string&);
+    Server(jsonrpc::UnixDomainSocketServer&, const std::string&, unsigned int, unsigned int);
+    ~Server();
 
-    Json::Value task_register(const std::string& name, int pid, bool track);
-    Json::Value task_unregister(const std::string& token);
-    Json::Value task_list();
-    Json::Value memory_alloc(int size, const std::string& token);
-    Json::Value memory_dealloc(int offset, const std::string& token);
-    Json::Value memory_inspect();
-    Json::Value data_create(const Json::Value& data, const std::string& id, const std::string& token);
-    Json::Value data_remove(const std::string& id, const std::string& token);
-    Json::Value data_list(const std::string& id);
-    Json::Value data_get(const std::string& id);
-    Json::Value link_add(const std::string& dataId, const std::string& linkId);
-    Json::Value link_remove(const std::string& dataId, const std::string& linkId);
-    Json::Value link_list(const std::string& pattern);
-    Json::Value link_get(const std::string& id);
-    Json::Value link_updates(const std::string& token);
+    void get_config(ConfigResponse&);
+
+    void memory_alloc(int, MemoryAllocResponse&);
+    void memory_dealloc(const std::string& token);
+    void memory_list(MemoryListResponse&);
+    void memory_get(int offset, MemoryGetResponse&);
+
+    /**
+     * @brief
+     * Here are the rules for creating data points
+     *
+     * 1. if you own a memory token and use it when creating a data point, the data point
+     *    is bound to the memory area. Is it deallocated then the data point will be removed.
+     *    The data point is considered private since the memory token owner is the only one
+     *    who can remove the data point. But it is still readable by all others.
+     * 2. if you create a data point with an empty token (character count zero) then this data point
+     *    is public meaning everyone can remove it. It musst be located inside a allocated memory area
+     *    and when that memory area is deallocated, this data point will be removed.
+     * 3. Data points with a size bigger than 8 bit cannot have an index. Index and size information musst
+     *    contain the data inside the size of one byte. Meaning a data point with a bitsize of 5 cannot be
+     *    at index > 3.
+     * 4. Data points cannot be declared with a type and size information at the same time.
+     * 5. Data points with unknown datatype can be of any size.
+     * 6. Consider the memory boundaries.
+     *
+     */
+
+    void data_create(
+        const std::string& token,
+        const std::string& dId,
+        const DataCreateRequest&);
+
+    void data_remove(
+        const std::string& pattern,
+        const std::string& token,
+        DataRemoveResponse& res);
+
+    void data_list(
+        const std::string& filterPattern,
+        DataListResponse& response);
+
+    Json::Value data_get(const std::string& dId);
+
+    void link_add(
+        const std::string& linkname,
+        std::vector<std::string>& dataIds,
+        unsigned int&);
+    void link_remove(const std::string& linkname, std::vector<std::string>& data_ids, unsigned int& counter);
+    void link_list(const std::string& pattern, AbstractStubServer::LinkListResponse&);
+
+    Json::Value link_get(const std::string& lId);
+
+    std::set<std::shared_ptr<MemoryArea>> getMemoryAreas();
 
   private:
 
-    std::string& id;
+    const std::string& id;
+    unsigned int size;
+    unsigned int cycle;
 
-    TaskFactory taskFactory;
+    static std::mutex alloc_mutex;
+    static std::mutex persistent_mutex;
 
     /* memory management */
     Memory memory;
-    OwnerFactory<unsigned int, unsigned int> allocOwnerFactory;
 
-    /* data management */
-    DataFactory dataFactory;
-    OwnerFactory<std::string, unsigned int> dataOwnerFactory;
+    /*    std::map<const std::string, std::shared_ptr<Data>> dataMap;
+        std::map<const std::string, std::string> dataTokenMap;
+        std::map<const std::string, std::shared_ptr<MemoryArea>> dataMemoryMap;
+    */
+    DataMap dataMap;
+    LinkMap linkMap;
+
+    static bool match(const std::string& pattern, const std::string& target);
+
+    std::atomic<bool> persistentThreadRunning;
+    std::atomic<unsigned int> persistentChangeCount;
+    std::shared_ptr<std::thread> persistentThread;
+    void makeLinksPersistent();
 
 };
 

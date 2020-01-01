@@ -7,11 +7,13 @@ namespace RikerIO {
 
 enum Error {
     NO_ERROR = 0,
-    UNAUTHORIZED_ERROR = 1,
-    DUPLICATE_ERROR = 2,
-    NOTFOUND_ERROR = 3,
-    GENTOKEN_ERROR = 4,
-    OUTOFSPACE_ERROR = 5
+    UNAUTHORIZED_ERROR = -1,
+    DUPLICATE_ERROR = -2,
+    NOTFOUND_ERROR = -3,
+    GENTOKEN_ERROR = -4,
+    OUTOFSPACE_ERROR = -5,
+    BAD_REQUEST = -6,
+    INTERNAL_ERROR = -7
 };
 
 class GenerateTokenException : public std::runtime_error {
