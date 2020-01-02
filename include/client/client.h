@@ -1,37 +1,45 @@
+#ifndef __RIKERIO_CLIENT_H__
+#define __RIKERIO_CLIENT_H__
 
-#ifndef __JSONRPC_CPP_CLIENT_H__
-#define __JSONRPC_CPP_CLIENT_H__
 #include "json/json.h"
 #include "jsonrpccpp/client.h"
 #include "client/abstract-client.h"
 
+#include "jsonrpccpp/client/connectors/unixdomainsocketclient.h"
+
 namespace RikerIO {
 
-class Client : public AbstractClient, public jsonrpc::Client {
+class Client : public AbstractClient {
   public:
+
+    /**
+     * @params profile
+     */
+    Client(const std::string&);
+
+    Response::v1::ConfigGetPtr config_get(Request::v1::ConfigGet&);
+
+    Response::v1::MemoryAllocPtr memory_alloc(Request::v1::MemoryAlloc&);
+    Response::v1::MemoryDeallocPtr memory_dealloc(Request::v1::MemoryDealloc&);
+    Response::v1::MemoryListPtr memory_list(Request::v1::MemoryList&);
+
+    Response::v1::DataAddPtr data_add(Request::v1::DataAdd&);
+    Response::v1::DataRemovePtr data_remove(Request::v1::DataRemove&);
+    Response::v1::DataListPtr data_list(Request::v1::DataList&);
+
+    Response::v1::LinkAddPtr link_add(Request::v1::LinkAdd&);
+    Response::v1::LinkRemovePtr link_remove(Request::v1::LinkRemove&);
+    Response::v1::LinkListPtr link_list(Request::v1::LinkList&);
+
+  protected:
+
+    /* for testing only */
     Client(jsonrpc::IClientConnector&);
 
-    void config_get(AbstractClient::ConfigGetResponse&);
-
-    void memory_alloc(unsigned int size, AbstractClient::MemoryAllocResponse&);
-    void memory_dealloc(const std::string& token);
-    void memory_list(AbstractClient::MemoryListResponse&);
-
-    void data_create(const std::string& token, const std::string& id, DataCreateRequest req);
-    void data_remove(const std::string& token, const std::string& pattern, unsigned int& resCount);
-    void data_list(const std::string& pattern, DataListResponse&);
-
-    void link_add(const std::string& key, std::vector<std::string>& list, unsigned int&);
-    void link_list(const std::string& pattern, LinkListResponse&);
-
-#if 0
-
-
-    Json::Value data_get(const std::string& id, const std::string& token);
-    Json::Value link_remove(const std::string& dataId, const std::string& linkId);
-    Json::Value link_get(const std::string& id);
-    Json::Value link_updates(const std::string& token);
-#endif
+  private:
+    const std::string socketFile;
+    std::shared_ptr<jsonrpc::UnixDomainSocketClient> socketClient;
+    jsonrpc::Client rpcClient;
 
 };
 

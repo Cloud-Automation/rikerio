@@ -1,18 +1,16 @@
 #include "client/client.h"
-#include "jsonrpccpp/client/connectors/unixdomainsocketclient.h"
-#include <iostream>
 
-void cmd_link_add(RikerIO::Client& client,
-                  const std::string& key,
-                  std::vector<std::string>& list) {
+std::shared_ptr<RikerIO::AbstractResponse> cmd_link_add(RikerIO::Client& client,
+        const std::string& key,
+        std::vector<std::string>& list) {
 
 
-    unsigned int counter = 0;
+    RikerIO::Request::v1::LinkAdd req(key, list);
 
-    client.link_add(key, list, counter);
+    auto response = client.link_add(req);
 
-    printf("%d\n", counter);
+    printf("%d\n", response->get_counter());
 
-    exit(EXIT_SUCCESS);
+    return std::static_pointer_cast<RikerIO::AbstractResponse>(response);
 
 }

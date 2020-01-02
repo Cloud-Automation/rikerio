@@ -1,35 +1,39 @@
 #include "client/client.h"
-#include "jsonrpccpp/client/connectors/unixdomainsocketclient.h"
-#include <iostream>
 #include <algorithm>
 
-bool cmd_link_list_comp_offset(RikerIO::AbstractClient::LinkListItem& a, RikerIO::AbstractClient::LinkListItem& b) {
+bool cmd_link_list_comp_offset(
+    std::shared_ptr<RikerIO::Response::v1::LinkList::LinkListItem> a,
+    std::shared_ptr<RikerIO::Response::v1::LinkList::LinkListItem> b) {
 
-    if (!a.data || !b.data) {
+    if (!a->get_item() || !b->get_item()) {
         return false;
     }
 
-    if (a.data->offset == b.data->offset) {
-        return a.data->index < b.data->index;
+    if (a->get_item()->get_offset() == b->get_item()->get_offset()) {
+        return a->get_item()->get_index() < b->get_item()->get_index();
     }
 
-    return a.data->offset < b.data->offset;
+    return a->get_item()->get_offset() < b->get_item()->get_offset();
 
 }
 
-bool cmd_link_list_comp_key(RikerIO::AbstractClient::LinkListItem& a, RikerIO::AbstractClient::LinkListItem& b) {
+bool cmd_link_list_comp_key(
+    std::shared_ptr<RikerIO::Response::v1::LinkList::LinkListItem> a,
+    std::shared_ptr<RikerIO::Response::v1::LinkList::LinkListItem> b) {
 
-    return a.key < b.key;
-
-}
-
-bool cmd_link_list_comp_id(RikerIO::AbstractClient::LinkListItem& a, RikerIO::AbstractClient::LinkListItem& b) {
-
-    return a.id < b.id;
+    return a->get_key() < b->get_key();
 
 }
 
-void cmd_link_list(
+bool cmd_link_list_comp_id(
+    std::shared_ptr<RikerIO::Response::v1::LinkList::LinkListItem> a,
+    std::shared_ptr<RikerIO::Response::v1::LinkList::LinkListItem> b) {
+
+    return a->get_id() < b->get_id();
+
+}
+
+std::shared_ptr<RikerIO::AbstractResponse> cmd_link_list(
     RikerIO::Client& client,
     const std::string& pattern,
     const std::string& sortBy,
@@ -38,27 +42,29 @@ void cmd_link_list(
     bool hideEmptyLinks) {
 
 
-    RikerIO::AbstractClient::LinkListResponse response;
+    RikerIO::Request::v1::LinkList req(pattern);
 
-    client.link_list(pattern, response);
+    auto response = client.link_list(req);
+
+    auto items = response->get_items();
 
     if (sortBy == "offset") {
-        sort(response.list.begin(), response.list.end(), cmd_link_list_comp_offset);
+        sort(items.begin(), items.end(), cmd_link_list_comp_offset);
     } else if (sortBy == "id") {
-        sort(response.list.begin(), response.list.end(), cmd_link_list_comp_id);
+        sort(items.begin(), items.end(), cmd_link_list_comp_id);
     } else if (sortBy == "key") {
-        sort(response.list.begin(), response.list.end(), cmd_link_list_comp_key);
+        sort(items.begin(), items.end(), cmd_link_list_comp_key);
     }
 
     if (descending) {
-        std::reverse(response.list.begin(), response.list.end());
+        std::reverse(items.begin(), items.end());
     }
 
     if (extendedList) {
 
         unsigned int maxLength = 0;
-        for (auto a : response.list) {
-            maxLength = std::max(maxLength, (unsigned int)a.id.length());
+        for (auto a : items) {
+            maxLength = std::max(maxLength, (unsigned int)a->get_id().length());
         }
 
         std::string idHeader = "ID";
@@ -68,50 +74,50 @@ void cmd_link_list(
 
         printf("%sOFFSET  SIZE    SEMAPHORE FLAGS TYPE       KEY\n", idHeader.c_str());
 
-        for (auto a : response.list) {
+        for (auto a : items) {
 
-            std::string altId = a.id;
+            std::string altId = a->get_id();
 
-            for (unsigned int i = 0; i < maxLength - a.id.length() + 2; i+= 1) {
+            for (unsigned int i = 0; i < maxLength - a->get_id().length() + 2; i+= 1) {
                 altId += " ";
             }
 
-            if (!a.data) {
+            if (!a->get_item()) {
 
                 if (!hideEmptyLinks) {
                     printf("%s-       -       -         -     -%-10s%s\n",
                            altId.c_str(),
                            "",
-                           a.key.c_str());
+                           a->get_key().c_str());
                 }
 
                 continue;
             }
 
-            std::string sOffset = std::to_string(a.data->offset) + "." + std::to_string(a.data->index);
+            std::string sOffset = std::to_string(a->get_item()->get_offset()) + "." + std::to_string(a->get_item()->get_index());
             std::string flags = "";
-            flags += a.data->isPrivate ? "P" : "-";
+            flags += a->get_item()->is_private() ? "P" : "-";
 
             printf("%s%-8s%-8d%-10d%-6s%-11s%s\n",
                    altId.c_str(),
                    sOffset.c_str(),
-                   a.data->size,
-                   a.data->semaphore,
+                   a->get_item()->get_size(),
+                   a->get_item()->get_semaphore(),
                    flags.c_str(),
-                   a.data->datatype.c_str(),
-                   a.key.c_str());
+                   RikerIO::Utils::GetStringFromType(a->get_item()->get_datatype()).c_str(),
+                   a->get_key().c_str());
         }
 
     } else {
-        for (auto a : response.list) {
+        for (auto a : items) {
             printf("%s;%s\n",
-                   a.key.c_str(),
-                   a.id.c_str());
+                   a->get_key().c_str(),
+                   a->get_id().c_str());
         }
 
 
     }
 
-    exit(EXIT_SUCCESS);
+    return std::static_pointer_cast<RikerIO::AbstractResponse>(response);
 
 }

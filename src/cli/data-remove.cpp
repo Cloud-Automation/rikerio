@@ -2,17 +2,17 @@
 #include "jsonrpccpp/client/connectors/unixdomainsocketclient.h"
 #include <iostream>
 
-void cmd_data_remove(
+std::shared_ptr<RikerIO::AbstractResponse> cmd_data_remove(
     RikerIO::Client& client,
     const std::string& token,
     const std::string& pattern) {
 
-    unsigned int removeCount = 0;
+    RikerIO::Request::v1::DataRemove req(pattern, token);
 
-    client.data_remove(token, pattern, removeCount);
+    auto response = client.data_remove(req);
 
-    printf("%d\n", removeCount);
+    printf("%d\n", response->get_count());
 
-    exit(EXIT_SUCCESS);
+    return std::static_pointer_cast<RikerIO::AbstractResponse>(response);
 
 }

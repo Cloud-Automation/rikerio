@@ -3,23 +3,27 @@
 #include <iostream>
 #include <algorithm>
 
-bool cmd_data_list_comp_offset(RikerIO::AbstractClient::DataListItem& a, RikerIO::AbstractClient::DataListItem& b) {
+bool cmd_data_list_comp_offset(
+    std::shared_ptr<RikerIO::Response::v1::DataList::DataListItem> a,
+    std::shared_ptr<RikerIO::Response::v1::DataList::DataListItem> b) {
 
-    if (a.offset == b.offset) {
-        return a.index < b.index;
+    if (a->get_offset() == b->get_offset()) {
+        return a->get_index() < b->get_index();
     }
 
-    return a.offset < b.offset;
+    return a->get_offset() < b->get_offset();
 
 }
 
-bool cmd_data_list_comp_id(RikerIO::AbstractClient::DataListItem& a, RikerIO::AbstractClient::DataListItem& b) {
+bool cmd_data_list_comp_id(
+    std::shared_ptr<RikerIO::Response::v1::DataList::DataListItem> a,
+    std::shared_ptr<RikerIO::Response::v1::DataList::DataListItem> b) {
 
-    return a.id < b.id;
+    return a->get_id() < b->get_id();
 
 }
 
-void cmd_data_list(
+std::shared_ptr<RikerIO::AbstractResponse> cmd_data_list(
     RikerIO::Client& client,
     const std::string& pattern,
     bool extendedList,
@@ -27,42 +31,43 @@ void cmd_data_list(
     bool descending) {
 
 
-    RikerIO::AbstractClient::DataListResponse response;
+    RikerIO::Request::v1::DataList req(pattern);
 
-    client.data_list(pattern, response);
+    auto response = client.data_list(req);
+    auto items = response->get_items();
 
     if (sortBy == "offset") {
-        sort(response.list.begin(), response.list.end(), cmd_data_list_comp_offset);
+        sort(items.begin(), items.end(), cmd_data_list_comp_offset);
     } else if (sortBy == "id") {
-        sort(response.list.begin(), response.list.end(), cmd_data_list_comp_id);
+        sort(items.begin(), items.end(), cmd_data_list_comp_id);
     }
 
     if (descending) {
-        std::reverse(response.list.begin(), response.list.end());
+        std::reverse(items.begin(), items.end());
     }
 
     if (extendedList) {
         printf("OFFSET\tSIZE\tSEMAPHORE\tFLAGS\tTYPE\t\tID\n");
 
-        for (auto a : response.list) {
+        for (auto a : items) {
 
             std::string flags = "";
-            flags += a.isPrivate ? "P" : "-";
+            flags += a->is_private() ? "P" : "-";
 
             printf("%d.%d\t%d\t%d\t\t%s\t%-10s\t%s\n",
-                   a.offset,
-                   a.index,
-                   a.size,
-                   a.semaphore,
+                   a->get_offset(),
+                   a->get_index(),
+                   a->get_size(),
+                   a->get_semaphore(),
                    flags.c_str(),
-                   a.datatype.c_str(),
-                   a.id.c_str());
+                   RikerIO::Utils::GetStringFromType(a->get_datatype()).c_str(),
+                   a->get_id().c_str());
         }
 
     } else {
-        for (auto a : response.list) {
+        for (auto a : items) {
             printf("%s\n",
-                   a.id.c_str());
+                   a->get_id().c_str());
         }
 
 

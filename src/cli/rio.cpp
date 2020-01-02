@@ -1,46 +1,53 @@
 #include "client/client.h"
 #include "common/CLI11.h"
-#include "jsonrpccpp/client/connectors/unixdomainsocketclient.h"
-#include <memory>
-#include <iostream>
 #include "common/utils.h"
 
-void cmd_config_get(RikerIO::Client&);
-void cmd_memory_alloc(RikerIO::Client&, unsigned int, bool);
-void cmd_memory_dealloc(RikerIO::Client&, const std::string&);
-void cmd_memory_list(RikerIO::Client&);
+#include <memory>
+#include <iostream>
 
-void cmd_data_create(RikerIO::Client&, const std::string&, const std::string&, const std::string&, unsigned int, unsigned int);
-void cmd_data_create(RikerIO::Client&, const std::string&, const std::string&, unsigned int, unsigned int, unsigned int);
-void cmd_data_list(RikerIO::Client&, const std::string&, bool, const std::string, bool);
-void cmd_data_remove(RikerIO::Client&, const std::string&, const std::string&);
-void cmd_link_add(RikerIO::Client&, const std::string&, std::vector<std::string>&);
-void cmd_link_list(RikerIO::Client&, const std::string&, const std::string&, bool, bool, bool);
+std::shared_ptr<RikerIO::AbstractResponse> cmd_config_get(RikerIO::Client&);
+std::shared_ptr<RikerIO::AbstractResponse> cmd_memory_alloc(RikerIO::Client&, unsigned int, bool);
+std::shared_ptr<RikerIO::AbstractResponse> cmd_memory_dealloc(RikerIO::Client&, const std::string&);
+std::shared_ptr<RikerIO::AbstractResponse> cmd_memory_list(RikerIO::Client&);
+
+std::shared_ptr<RikerIO::AbstractResponse> cmd_data_add(RikerIO::Client&, const std::string&, const std::string&, const std::string&, unsigned int, unsigned int);
+std::shared_ptr<RikerIO::AbstractResponse> cmd_data_add(RikerIO::Client&, const std::string&, const std::string&, unsigned int, unsigned int, unsigned int);
+std::shared_ptr<RikerIO::AbstractResponse> cmd_data_remove(RikerIO::Client&, const std::string&, const std::string&);
+std::shared_ptr<RikerIO::AbstractResponse> cmd_data_list(RikerIO::Client&, const std::string&, bool, const std::string, bool);
+
+std::shared_ptr<RikerIO::AbstractResponse> cmd_link_add(
+    RikerIO::Client&,
+    const std::string&,
+    std::vector<std::string>&);
+
+std::shared_ptr<RikerIO::AbstractResponse> cmd_link_remove(
+    RikerIO::Client&,
+    const std::string&,
+    std::vector<std::string>&);
+
+std::shared_ptr<RikerIO::AbstractResponse> cmd_link_list(
+    RikerIO::Client&,
+    const std::string&,
+    const std::string&,
+    bool,
+    bool,
+    bool);
 
 void clientHandler(
     const std::string& profile,
-    std::function<void(RikerIO::Client&)> handler) {
+    std::function<std::shared_ptr<RikerIO::AbstractResponse>(RikerIO::Client&)> handler) {
 
-    try {
+    RikerIO::Client rpcClient(profile);
 
-        std::string socketFile = "/var/lib/rikerio/" + profile + "/socket";
+    auto response = handler(rpcClient);
 
-        jsonrpc::UnixDomainSocketClient socketClient(socketFile);
-        RikerIO::Client rpcClient(socketClient);
-
-        handler(rpcClient);
-
-    } catch (RikerIO::AbstractClient::ClientError e) {
-
-        fprintf(stderr, "%s (%d)\n", e.getMessage().c_str(), e.getCode());
+    if (!response->ok()) {
+        fprintf(stderr, "%s (%d)\n", response->get_message().c_str(), response->get_code());
         exit(EXIT_FAILURE);
-
-    } catch (jsonrpc::JsonRpcException& e) {
-
-        fprintf(stderr, "%s\n", e.what());
-        exit(EXIT_FAILURE);
-
     }
+
+    exit(EXIT_SUCCESS);
+
 
 }
 
@@ -119,8 +126,8 @@ int main(int argc, char** argv) {
     } linkListReq;
 
     struct {
-        std::string linkpattern = "*";
-        std::vector<std::string> dataVector;
+        std::string pattern = "*";
+        std::vector<std::string> list;
     } linkRemoveReq;
 
     memoryAllocApp->add_option("-s,--size", memoryAllocReq.size, "Allocation Bytesize")->required();
@@ -173,28 +180,30 @@ int main(int argc, char** argv) {
     linkListApp->add_flag("-d,--desc", linkListReq.sortDesc, "Reverse order");
     linkListApp->add_flag("-e,--hide-empty", linkListReq.hideEmptyLinks, "Hide Empty Links");
 
-    linkRemoveApp->add_option("linkname", linkRemoveReq.linkpattern, "Link ID")->required();
-    linkRemoveApp->add_option("data", linkRemoveReq.dataVector, "Data IDs.");
+    linkRemoveApp->add_option("linkname", linkRemoveReq.pattern, "Link ID")->required();
+    linkRemoveApp->add_option("data", linkRemoveReq.list, "Data IDs.");
 
     configApp->callback([&] () {
-        clientHandler(profile, cmd_config_get);
+        clientHandler(profile, [](RikerIO::Client& client) {
+            return cmd_config_get(client);
+        });
     });
 
     memoryAllocApp->callback([&] () {
         clientHandler(profile, [&](RikerIO::Client& client) {
-            cmd_memory_alloc(client, memoryAllocReq.size, memoryAllocReq.tokenOnly);
+            return cmd_memory_alloc(client, memoryAllocReq.size, memoryAllocReq.tokenOnly);
         });
     });
 
     memoryDeallocApp->callback([&]() {
         clientHandler(profile, [&](RikerIO::Client& client)  {
-            cmd_memory_dealloc(client, memoryDeallocReq.token);
+            return cmd_memory_dealloc(client, memoryDeallocReq.token);
         });
     });
 
     memoryListApp->callback([&] {
         clientHandler(profile, [&](RikerIO::Client& client) {
-            cmd_memory_list(client);
+            return cmd_memory_list(client);
         });
     });
 
@@ -202,54 +211,57 @@ int main(int argc, char** argv) {
 
         if (dataAddReq.type != RikerIO::Utils::Datatype::UNDEFINED) {
             clientHandler(profile, [&](RikerIO::Client& client) {
-                cmd_data_create(
-                    client,
-                    dataAddReq.token,
-                    dataAddReq.id,
-                    RikerIO::Utils::GetStringFromType(dataAddReq.type),
-                    dataAddReq.index,
-                    dataAddReq.offset);
+                return cmd_data_add(
+                           client,
+                           dataAddReq.token,
+                           dataAddReq.id,
+                           RikerIO::Utils::GetStringFromType(dataAddReq.type),
+                           dataAddReq.index,
+                           dataAddReq.offset);
             });
         } else {
             clientHandler(profile, [&](RikerIO::Client& client) {
-                cmd_data_create(
-                    client,
-                    dataAddReq.token,
-                    dataAddReq.id,
-                    dataAddReq.size,
-                    dataAddReq.index,
-                    dataAddReq.offset);
+                return cmd_data_add(
+                           client,
+                           dataAddReq.token,
+                           dataAddReq.id,
+                           dataAddReq.size,
+                           dataAddReq.index,
+                           dataAddReq.offset);
             });
         }
 
     });
 
-    dataListApp->callback([&] () {
-        clientHandler(profile, [&](RikerIO::Client& client) {
-            cmd_data_list(client, dataListReq.pattern, dataListReq.extendedList, dataListReq.sortBy, dataListReq.sortDesc);
+    dataRemoveApp->callback([&] () {
+        clientHandler(profile, [&] (RikerIO::Client& client) {
+            return cmd_data_remove(client, dataRemoveReq.token, dataRemoveReq.pattern);
         });
     });
 
-    dataRemoveApp->callback([&] () {
-        clientHandler(profile, [&] (RikerIO::Client& client) {
-            cmd_data_remove(client, dataRemoveReq.token, dataRemoveReq.pattern);
+    dataListApp->callback([&] () {
+        clientHandler(profile, [&](RikerIO::Client& client) {
+            return cmd_data_list(client, dataListReq.pattern, dataListReq.extendedList, dataListReq.sortBy, dataListReq.sortDesc);
         });
     });
+
+
 
     linkAddApp->callback([&] () {
         clientHandler(profile, [&](RikerIO::Client& client) {
-            cmd_link_add(client, linkAddReq.key, linkAddReq.list);
+            return cmd_link_add(client, linkAddReq.key, linkAddReq.list);
         });
     });
 
     linkRemoveApp->callback([&] () {
+        clientHandler(profile, [&](RikerIO::Client& client) {
+            return cmd_link_remove(client, linkRemoveReq.pattern, linkRemoveReq.list);
+        });
     });
 
     linkListApp->callback([&] () {
         clientHandler(profile, [&](RikerIO::Client& client) {
-
-            cmd_link_list(client, linkListReq.pattern, linkListReq.sortBy, linkListReq.extendedList, linkListReq.sortDesc, linkListReq.hideEmptyLinks);
-
+            return cmd_link_list(client, linkListReq.pattern, linkListReq.sortBy, linkListReq.extendedList, linkListReq.sortDesc, linkListReq.hideEmptyLinks);
         });
     });
 

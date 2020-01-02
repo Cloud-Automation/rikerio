@@ -5,7 +5,7 @@ Description=Starting RikerIO Profile %I
 Type=notify
 NotifyAccess=all
 Group=rikerio
-ExecStart=/usr/bin/rio profile create --id=%i
+ExecStart=/usr/bin/rikerio-server --id=%i --size=4096
 
 [Install]
 WantedBy=multi-user.target

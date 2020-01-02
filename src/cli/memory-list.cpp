@@ -2,18 +2,22 @@
 #include "jsonrpccpp/client/connectors/unixdomainsocketclient.h"
 #include <iostream>
 
-void cmd_memory_list(RikerIO::Client& client) {
+std::shared_ptr<RikerIO::AbstractResponse> cmd_memory_list(RikerIO::Client& client) {
 
-    RikerIO::AbstractClient::MemoryListResponse response;
+    RikerIO::Request::v1::MemoryList request;
 
-    client.memory_list(response);
+    auto response = client.memory_list(request);
 
-    printf("OFFSET\tSIZE\tSEMAPHORE\n");
+    if (response->ok()) {
 
-    for (auto a : response.list) {
-        printf("%d\t%d\t%d\n", a.offset, a.size, a.semaphore);
+        printf("OFFSET\tSIZE\tSEMAPHORE\n");
+
+        for (auto a : response->get_items()) {
+            printf("%d\t%d\t%d\n", a->get_offset(), a->get_size(), a->get_semaphore());
+        }
+
     }
 
-    exit(EXIT_SUCCESS);
+    return std::static_pointer_cast<RikerIO::AbstractResponse>(response);
 
 }

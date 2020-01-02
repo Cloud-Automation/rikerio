@@ -1,5 +1,8 @@
 #include "server/server.h"
 
+#include "common/CLI11.h"
+#include "common/config.h"
+
 #include <string>
 #include <dirent.h>
 #include <sys/types.h>
@@ -13,21 +16,8 @@
 #include <dlfcn.h>
 #include <signal.h>
 
-std::string profile = "default";
-unsigned int size = 4096;
-unsigned int cycle = 10000;
 mode_t dirMode = 0770;
 unsigned int running = 1;
-
-
-static struct option long_options[] = {
-    { "id", required_argument, NULL, 'i' },
-    { "size", required_argument, NULL, 's' },
-    { "cycle", required_argument, NULL, 'c' },
-    { "help", no_argument, NULL, 'h' },
-    { "version", no_argument, NULL, 'v' },
-    { NULL, 0, NULL, 0 }
-};
 
 static void signalHandler(int sigNo) {
 
@@ -37,76 +27,7 @@ static void signalHandler(int sigNo) {
 
 }
 
-static void printHelp() {
-
-    printf("Usage: rio-server [OPTIONS] \n\n");
-    printf("Options:\n");
-    printf("\t-i|--id\t\tName of the memory profile (defaults to 'default').\n");
-    printf("\t-s|--size\tMemory Size (defaults to 4096 Bytes).\n");
-    printf("\t-c|--cycle\tDefault Cycle (defaults to 10.000 us).\n");
-    printf("\t-v|--version\tPrint version.\n");
-    printf("\t-h|--help\tPrint this help.\n\n");
-    printf("Created by Stefan Pöter<rikerio@cloud-automation.de>.\n");
-
-}
-
-static void printVersion() {
-    printf("%s\n", RIO_VERSION);
-}
-
-
-static int parseArguments(int argc, char* argv[]) {
-
-    while (1) {
-
-        int option_index = 0;
-        int c = getopt_long(argc, argv, "i::s::c::hv", long_options, &option_index);
-
-        if (c == -1) {
-            break;
-        }
-
-        switch (c) {
-        case 'i':
-            if (strlen(optarg) == 0) {
-                fprintf(stderr, "Invalid id.\n");
-                return -1;
-            }
-            profile = optarg;
-
-            break;
-        case 's':
-            size = atoi(optarg);
-            if (errno == ERANGE) {
-                printf("Error parsing size.\n");
-                exit(EXIT_FAILURE);
-            }
-            break;
-        case 'c':
-            cycle = atoi(optarg);
-            if (errno == ERANGE) {
-                printf("Error parsing cycle.\n");
-                exit(EXIT_FAILURE);
-            }
-            break;
-        case 'h':
-            printHelp();
-            exit(EXIT_SUCCESS);
-        case 'v':
-            printVersion();
-            exit(EXIT_SUCCESS);
-        case '?':
-            printHelp();
-            exit(EXIT_SUCCESS);
-        }
-
-    }
-
-    return 1;
-
-}
-
-static int applyGroupAndRights(std::string& path, mode_t& mode) {
+static int applyGroupAndRights(const std::string& path, mode_t& mode) {
 
     std::string groupName = "rikerio";
 
@@ -137,7 +58,7 @@ static int applyGroupAndRights(std::string& path, mode_t& mode) {
 
 }
 
-static void checkAndCreateFolder(std::string& folder, mode_t& dirMode) {
+static void checkAndCreateFolder(const std::string& folder, mode_t& dirMode) {
 
     DIR* dir = opendir(folder.c_str());
     if (!dir) {
@@ -160,7 +81,7 @@ static void systemd_notify(std::string msg) {
     }
 
     systemd_notify *sd_notify = (systemd_notify*) dlsym(systemd_so, "sd_notify");
-    printf("Notifying systemd (%s).\n", msg.c_str());
+    //printf("Notifying systemd (%s).\n", msg.c_str());
     systemd_notify func = (systemd_notify) sd_notify;
     int retVal = func(0, msg.c_str());
 
@@ -173,14 +94,11 @@ static void systemd_notify(std::string msg) {
 }
 
 
-void tearDown(int exitCode) {
+void tearDown(int exitCode, const std::string& profile) {
 
     /* remove shared memory file */
 
-    std::string perRootFolder = "/var/lib/rikerio";
-    std::string perProfileFolder = perRootFolder + "/" + profile;
-
-    std::string socketFile = perProfileFolder + "/socket";
+    std::string socketFile = RikerIO::Config::CreateSocketPath(profile);
 
     if (unlink(socketFile.c_str()) == -1) {
         printf("Error removing socket file %s.\n", strerror(errno));
@@ -201,26 +119,39 @@ int main(int argc, char** argv) {
     signal(SIGTERM, signalHandler);
     signal(SIGINT, signalHandler);
 
+    std::string profile = "default";
+    unsigned int size = 4096;
+    unsigned int cycle = 10000;
 
-    parseArguments(argc, argv);
+    CLI::App app;
 
-    std::string perRootFolder = "/var/lib/rikerio";
-    std::string perProfileFolder = perRootFolder + "/" + profile;
+    app.add_option("-i,--id", profile, "Profile ID", "default");
+    app.add_option("-s,--size", size, "Shared Memory Bytesize", 4096);
+    app.add_option("-c,--cycle", cycle, "Cycletime in us", 10000);
 
-    std::string socketFile = perProfileFolder + "/socket";
+    auto printVersion = [](int /*count*/) {
+        printf("%s\n", RIO_VERSION);
+        exit(EXIT_SUCCESS);
+    };
 
-    checkAndCreateFolder(perRootFolder, dirMode);
+    app.add_flag_function("-v,--version", printVersion, "Print version");
 
-    if (applyGroupAndRights(perRootFolder, dirMode) != 1) {
+    CLI11_PARSE(app, argc, argv);
+
+    std::string socketFile = RikerIO::Config::CreateSocketPath(profile);
+
+    checkAndCreateFolder(RikerIO::Config::BaseFolder, dirMode);
+
+    if (applyGroupAndRights(RikerIO::Config::BaseFolder, dirMode) != 1) {
         fprintf(stderr, "Error applying rights to Temp. Root Folder (%s).\n", strerror(errno));
-        tearDown(EXIT_FAILURE);
+        tearDown(EXIT_FAILURE, profile);
     }
 
-    checkAndCreateFolder(perProfileFolder, dirMode);
+    checkAndCreateFolder(RikerIO::Config::CreateProfilePath(profile), dirMode);
 
-    if (applyGroupAndRights(perProfileFolder, dirMode) != 1) {
+    if (applyGroupAndRights(RikerIO::Config::CreateProfilePath(profile), dirMode) != 1) {
         fprintf(stderr, "Error applying rights Temp. Profle Folder (%s).\n", strerror(errno));
-        tearDown(EXIT_FAILURE);
+        tearDown(EXIT_FAILURE, profile);
     }
 
 
@@ -228,18 +159,18 @@ int main(int argc, char** argv) {
 
         jsonrpc::UnixDomainSocketServer socket(socketFile, 1);
 
-
         RikerIO::Server server(socket, profile, size, cycle);
 
         if (server.StartListening()) {
 
             if (applyGroupAndRights(socketFile, dirMode) != 1) {
                 fprintf(stderr, "Error applying rights to Socket File (%s).\n", strerror(errno));
-                tearDown(EXIT_FAILURE);
+                tearDown(EXIT_FAILURE, profile);
             }
 
 
             printf("Server started listening...\n");
+            systemd_notify("READY=1");
 
             while (running == 1) {
                 sleep(1);
@@ -253,12 +184,10 @@ int main(int argc, char** argv) {
 
         }
 
-
-
     } catch (jsonrpc::JsonRpcException &e) {
         printf("%s\n", e.what());
     }
 
-    tearDown(EXIT_SUCCESS);
+    tearDown(EXIT_SUCCESS, profile);
 
 }
