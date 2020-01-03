@@ -5,7 +5,7 @@ set(CPACK_PACKAGE_VENDOR "Cloud Automation")
 set(CPACK_PACKAGE_VERSION_MAJOR VERSION_MAJOR)
 set(CPACK_PACKAGE_VERSION_MINOR VERSION_MINOR)
 set(CPACK_PACKAGE_VERSION_PATCH VERSION_PATCH)
-set(CPACK_PACKAGE_EXECUTABLES "rio rio-profile-create rio-alias-add rio-alias-rm rio-alias-inspect librikerio.so")
+set(CPACK_PACKAGE_EXECUTABLES "rio rikerio-server librikerio.so")
 
 SET(CPACK_CMAKE_GENERATOR "Unix Makefiles")
 SET(CPACK_SOURCE_GENERATOR "TGZ;TBZ2")

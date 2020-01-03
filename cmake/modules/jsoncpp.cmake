@@ -1,17 +1,13 @@
 set(JSONCPP_PREFIX       libjsoncpp)
 set(JSONCPP_BUILD_PREFIX libjsoncpp-build) 
-set(JSONCPP_VERSION      1.9.1)
+set(JSONCPP_VERSION      1.9.2)
 set(JSONCPP_GIT_URL      https://github.com/open-source-parsers/jsoncpp)
 set(JSONCPP_BASE_DIR     ${PROJECT_BINARY_DIR}/${JSONCPP_PREFIX}-${JSONCPP_VERSION})
 set(JSONCPP_SRC_DIR      ${JSONCPP_BASE_DIR})
 set(JSONCPP_BIN_DIR      ${JSONCPP_BASE_DIR}-build)
 set(JSONCPP_INSTALL_DIR  ${PROJECT_BINARY_DIR}/install)
-set(JSONCPP_INC          ${PROJECT_BINARY_DIR}/${JSONCPP_PREFIX}/src/${JSONCPP_PREFIX}/include ${JSONCPP_BIN_DIR}/include/json)
+set(JSONCPP_INC          ${JSONCPP_INSTALL_DIR}/include)
 set(JSONCPP_LIB          ${JSONCPP_BIN_DIR}/src/lib_json/libjsoncpp.a)
-
-include_directories(${JSONCPP_BIN_DIR}/include/json)
-
-message(STATUS ${JSONCPP_BIN_DIR}/include/json)
 
 ExternalProject_Add(${JSONCPP_PREFIX}
     PREFIX ${JSONCPP_PREFIX}
@@ -25,11 +21,13 @@ ExternalProject_Add(${JSONCPP_PREFIX}
       -DJSONCPP_WITH_TESTS=OFF
       -DJSONCPP_WITH_POST_BUILD_UNITTEST=OFF
       -DJSONCPP_WITH_PKGCONFIG_SUPPORT=OFF
+      -DBUILD_SHARED_LIBS=OFF
     INSTALL_DIR ${JSONCPP_INSTALL_DIR}
     LOG_DOWNLOAD 1
     LOG_BUILD 1
     STEP_TARGETS build
-    EXCLUDE_FROM_ALL TRUE)
+    EXCLUDE_FROM_ALL TRUE
+    OPTIONAL)
 
 message(STATUS "lib jsoncpp ... ${JSONCPP_LIB}")
 message(STATUS "inc jsoncpp ... ${JSONCPP_INC}")

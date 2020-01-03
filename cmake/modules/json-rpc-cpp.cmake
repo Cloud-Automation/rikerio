@@ -1,5 +1,5 @@
-set(JSONRPC_PREFIX       libjson-rpc-cpp)
-set(JSONRPC_BUILD_PREFIX libjson-rpc-cpp-build) 
+set(JSONRPC_PREFIX       libjsonrpccpp)
+set(JSONRPC_BUILD_PREFIX ${JSONRPC_PREFIX}-build) 
 set(JSONRPC_VERSION      v1.2.0)
 set(JSONRPC_GIT_URL      https://github.com/cinemast/libjson-rpc-cpp)
 set(JSONRPC_BASE_DIR     ${PROJECT_BINARY_DIR}/${JSONRPC_PREFIX}-${JSONRPC_VERSION})
@@ -10,7 +10,6 @@ set(JSONRPC_INC          ${PROJECT_BINARY_DIR}/${JSONRPC_PREFIX}/src/${JSONRPC_P
 set(JSONRPC_LIB_COMMON   ${JSONRPC_INSTALL_DIR}/lib/libjsonrpccpp-common.a)
 set(JSONRPC_LIB_SERVER   ${JSONRPC_INSTALL_DIR}/lib/libjsonrpccpp-server.a)
 set(JSONRPC_LIB_CLIENT   ${JSONRPC_INSTALL_DIR}/lib/libjsonrpccpp-client.a)
-
 
 ExternalProject_Add(${JSONRPC_PREFIX}
     PREFIX ${JSONRPC_PREFIX}
@@ -39,9 +38,9 @@ ExternalProject_Add(${JSONRPC_PREFIX}
     LOG_DOWNLOAD 1
     LOG_BUILD 1
     STEP_TARGETS build
-    DEPENDS libjsoncpp-build
-    EXCLUDE_FROM_ALL TRUE)
-
+    EXCLUDE_FROM_ALL TRUE
+    OPTIONAL
+    DEPENDS libjsoncpp)
 
 message(STATUS "lib jsonrpccpp common ... ${JSONRPC_LIB_COMMON}")
 message(STATUS "lib jsonrpccpp server ... ${JSONRPC_LIB_SERVER}")
