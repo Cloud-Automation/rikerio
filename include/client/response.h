@@ -6,11 +6,11 @@
 #include <json/json.h>
 #include <jsonrpccpp/client.h>
 
-#include "client/abstract-response.h"
+#include "common/error.h"
 
 namespace RikerIO {
 
-class RPCResponse : public AbstractResponse {
+class RPCResponse {
 
   public:
     RPCResponse(Json::Value& result) {
@@ -41,6 +41,10 @@ class RPCResponse : public AbstractResponse {
 
     const std::string& get_message() {
         return msg;
+    }
+
+    bool ok() {
+        return get_code() == RikerIO::NO_ERROR;
     }
 
   private:

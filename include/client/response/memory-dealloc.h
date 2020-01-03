@@ -8,7 +8,7 @@ namespace Response {
 namespace v1 {
 class MemoryDealloc : public RPCResponse {
   public:
-    MemoryDealloc(Json::Value& result) : RPCResponse(result) { }
+    MemoryDealloc(Json::Value& result);
 };
 using MemoryDeallocPtr = std::shared_ptr<MemoryDealloc>;
 }

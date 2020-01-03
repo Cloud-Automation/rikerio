@@ -9,12 +9,10 @@ namespace v1 {
 
 class LinkList : public RPCRequest<1> {
   public:
-    LinkList(const std::string& pattern) : RPCRequest<1>(), pattern(pattern) { }
-    Json::Value create_params () override {
-        Json::Value result;
-        result["pattern"] = pattern;
-        return result;
-    }
+
+    LinkList(const std::string& pattern);
+    Json::Value create_params () override;
+
   private:
     const std::string pattern;
 };

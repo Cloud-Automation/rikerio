@@ -1,6 +1,7 @@
 #include "client/client.h"
+#include <iostream>
 
-std::shared_ptr<RikerIO::AbstractResponse> cmd_link_add(RikerIO::Client& client,
+std::shared_ptr<RikerIO::RPCResponse> cmd_link_add(RikerIO::Client& client,
         const std::string& key,
         std::vector<std::string>& list) {
 
@@ -9,8 +10,8 @@ std::shared_ptr<RikerIO::AbstractResponse> cmd_link_add(RikerIO::Client& client,
 
     auto response = client.link_add(req);
 
-    printf("%d\n", response->get_counter());
+    std::cout << response->get_counter() << std::endl;
 
-    return std::static_pointer_cast<RikerIO::AbstractResponse>(response);
+    return response;
 
 }

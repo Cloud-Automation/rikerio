@@ -23,7 +23,7 @@ bool cmd_data_list_comp_id(
 
 }
 
-std::shared_ptr<RikerIO::AbstractResponse> cmd_data_list(
+std::shared_ptr<RikerIO::RPCResponse> cmd_data_list(
     RikerIO::Client& client,
     const std::string& pattern,
     bool extendedList,
@@ -73,6 +73,6 @@ std::shared_ptr<RikerIO::AbstractResponse> cmd_data_list(
 
     }
 
-    exit(EXIT_SUCCESS);
+    return response;
 
 }

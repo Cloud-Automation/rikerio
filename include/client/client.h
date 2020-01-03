@@ -3,13 +3,35 @@
 
 #include "json/json.h"
 #include "jsonrpccpp/client.h"
-#include "client/abstract-client.h"
-
 #include "jsonrpccpp/client/connectors/unixdomainsocketclient.h"
+
+#include "client/response.h"
+#include "client/response/config-get.h"
+#include "client/response/memory-alloc.h"
+#include "client/response/memory-dealloc.h"
+#include "client/response/memory-list.h"
+#include "client/response/data-add.h"
+#include "client/response/data-remove.h"
+#include "client/response/data-list.h"
+#include "client/response/link-add.h"
+#include "client/response/link-remove.h"
+#include "client/response/link-list.h"
+
+#include "client/request.h"
+#include "client/request/config-get.h"
+#include "client/request/memory-alloc.h"
+#include "client/request/memory-dealloc.h"
+#include "client/request/memory-list.h"
+#include "client/request/data-add.h"
+#include "client/request/data-remove.h"
+#include "client/request/data-list.h"
+#include "client/request/link-add.h"
+#include "client/request/link-remove.h"
+#include "client/request/link-list.h"
 
 namespace RikerIO {
 
-class Client : public AbstractClient {
+class Client {
   public:
 
     /**
@@ -45,4 +67,4 @@ class Client : public AbstractClient {
 
 }
 
-#endif //JSONRPC_CPP_STUB_STUBCLIENT_H_
+#endif

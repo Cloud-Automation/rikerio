@@ -8,13 +8,8 @@ namespace Request {
 namespace v1 {
 class MemoryAlloc : public RikerIO::RPCRequest<1> {
   public:
-    MemoryAlloc(unsigned int size)  : size(size) { }
-
-    Json::Value create_params() override {
-        Json::Value params;
-        params["size"] = size;
-        return params;
-    }
+    MemoryAlloc(unsigned int size);
+    Json::Value create_params() override;
 
   private:
     const unsigned int size;

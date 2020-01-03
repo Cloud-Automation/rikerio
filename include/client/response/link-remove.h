@@ -10,17 +10,8 @@ namespace v1 {
 class LinkRemove : public RPCResponse {
 
   public:
-    LinkRemove(Json::Value& result) : RPCResponse(result) {
-        if (!ok()) {
-            return;
-        }
-
-        counter = result["data"]["count"].asUInt();
-    }
-
-    unsigned int get_counter () const {
-        return counter;
-    }
+    LinkRemove(Json::Value& result);
+    unsigned int get_counter () const;
 
   private:
     unsigned int counter = 0;

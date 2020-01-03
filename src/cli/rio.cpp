@@ -1,31 +1,28 @@
 #include "client/client.h"
 #include "common/CLI11.h"
-#include "common/utils.h"
-
 #include <memory>
-#include <iostream>
 
-std::shared_ptr<RikerIO::AbstractResponse> cmd_config_get(RikerIO::Client&);
-std::shared_ptr<RikerIO::AbstractResponse> cmd_memory_alloc(RikerIO::Client&, unsigned int, bool);
-std::shared_ptr<RikerIO::AbstractResponse> cmd_memory_dealloc(RikerIO::Client&, const std::string&);
-std::shared_ptr<RikerIO::AbstractResponse> cmd_memory_list(RikerIO::Client&);
+std::shared_ptr<RikerIO::RPCResponse> cmd_config_get(RikerIO::Client&);
+std::shared_ptr<RikerIO::RPCResponse> cmd_memory_alloc(RikerIO::Client&, unsigned int, bool);
+std::shared_ptr<RikerIO::RPCResponse> cmd_memory_dealloc(RikerIO::Client&, const std::string&);
+std::shared_ptr<RikerIO::RPCResponse> cmd_memory_list(RikerIO::Client&);
 
-std::shared_ptr<RikerIO::AbstractResponse> cmd_data_add(RikerIO::Client&, const std::string&, const std::string&, const std::string&, unsigned int, unsigned int);
-std::shared_ptr<RikerIO::AbstractResponse> cmd_data_add(RikerIO::Client&, const std::string&, const std::string&, unsigned int, unsigned int, unsigned int);
-std::shared_ptr<RikerIO::AbstractResponse> cmd_data_remove(RikerIO::Client&, const std::string&, const std::string&);
-std::shared_ptr<RikerIO::AbstractResponse> cmd_data_list(RikerIO::Client&, const std::string&, bool, const std::string, bool);
+std::shared_ptr<RikerIO::RPCResponse> cmd_data_add(RikerIO::Client&, const std::string&, const std::string&, const std::string&, unsigned int, unsigned int);
+std::shared_ptr<RikerIO::RPCResponse> cmd_data_add(RikerIO::Client&, const std::string&, const std::string&, unsigned int, unsigned int, unsigned int);
+std::shared_ptr<RikerIO::RPCResponse> cmd_data_remove(RikerIO::Client&, const std::string&, const std::string&);
+std::shared_ptr<RikerIO::RPCResponse> cmd_data_list(RikerIO::Client&, const std::string&, bool, const std::string, bool);
 
-std::shared_ptr<RikerIO::AbstractResponse> cmd_link_add(
+std::shared_ptr<RikerIO::RPCResponse> cmd_link_add(
     RikerIO::Client&,
     const std::string&,
     std::vector<std::string>&);
 
-std::shared_ptr<RikerIO::AbstractResponse> cmd_link_remove(
+std::shared_ptr<RikerIO::RPCResponse> cmd_link_remove(
     RikerIO::Client&,
     const std::string&,
     std::vector<std::string>&);
 
-std::shared_ptr<RikerIO::AbstractResponse> cmd_link_list(
+std::shared_ptr<RikerIO::RPCResponse> cmd_link_list(
     RikerIO::Client&,
     const std::string&,
     const std::string&,
@@ -35,7 +32,7 @@ std::shared_ptr<RikerIO::AbstractResponse> cmd_link_list(
 
 void clientHandler(
     const std::string& profile,
-    std::function<std::shared_ptr<RikerIO::AbstractResponse>(RikerIO::Client&)> handler) {
+    std::function<std::shared_ptr<RikerIO::RPCResponse>(RikerIO::Client&)> handler) {
 
     RikerIO::Client rpcClient(profile);
 

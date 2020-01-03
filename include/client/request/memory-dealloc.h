@@ -9,13 +9,8 @@ namespace v1 {
 class MemoryDealloc : public RikerIO::RPCRequest<1> {
 
   public:
-    MemoryDealloc(const std::string& token) : token(token) { }
-
-    Json::Value create_params() override {
-        Json::Value params;
-        params["token"] = token;
-        return params;
-    }
+    MemoryDealloc(const std::string& token);
+    Json::Value create_params() override;
 
   private:
     const std::string token;

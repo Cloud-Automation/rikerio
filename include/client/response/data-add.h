@@ -8,7 +8,7 @@ namespace Response {
 namespace v1 {
 class DataAdd : public RikerIO::RPCResponse {
   public:
-    DataAdd(Json::Value& result) : RPCResponse(result) { }
+    DataAdd(Json::Value& result);
 };
 
 using DataAddPtr = std::shared_ptr<DataAdd>;

@@ -8,17 +8,9 @@ namespace Response {
 namespace v1 {
 class DataRemove : public RikerIO::RPCResponse {
   public:
-    DataRemove(Json::Value& result) : RPCResponse(result) {
-        if (!ok()) {
-            return;
-        }
 
-        count = result["data"]["count"].asUInt();
-    };
-
-    unsigned int get_count() const {
-        return count;
-    }
+    DataRemove(Json::Value& result);
+    unsigned int get_count() const;
 
   private:
     unsigned int count = 0;

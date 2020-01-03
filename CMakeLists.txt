@@ -46,34 +46,37 @@ file(GLOB SOURCES ${SRC}/*.c)
 
 include_directories(${PROJECT_BINARY_DIR}/include)
 
+set(COMMON_SRC_FILES ${SRC}/common/config.cpp 
+    ${SRC}/common/utils.cpp)
+set(CLIENT_SRC_FILES ${SRC}/client/client.cpp
+    ${SRC}/client/request/memory-alloc.cpp
+    ${SRC}/client/request/memory-dealloc.cpp
+    ${SRC}/client/request/data-add.cpp
+    ${SRC}/client/request/data-remove.cpp
+    ${SRC}/client/request/data-list.cpp
+    ${SRC}/client/request/link-add.cpp
+    ${SRC}/client/request/link-remove.cpp
+    ${SRC}/client/request/link-list.cpp
+    ${SRC}/client/response/config-get.cpp
+    ${SRC}/client/response/memory-alloc.cpp
+    ${SRC}/client/response/memory-dealloc.cpp
+    ${SRC}/client/response/memory-list.cpp
+    ${SRC}/client/response/data-add.cpp
+    ${SRC}/client/response/data-remove.cpp
+    ${SRC}/client/response/data-list.cpp
+    ${SRC}/client/response/link-add.cpp
+    ${SRC}/client/response/link-remove.cpp
+    ${SRC}/client/response/link-list.cpp)
 
-# add rikerio library first
-
-add_library(rikerio 
-    ${SRC}/common/config.cpp
-    ${SRC}/client/client.cpp)
-target_include_directories(rikerio PUBLIC ${INC} ${INC_BINARY} ${JSONCPP_INC})
-add_dependencies(rikerio ${JSONRPC_PREFIX} ${JSONCPP_PREFIX})
-
-add_executable(rikerio-server
-    ${SRC}/common/config.cpp
-    ${SRC}/common/utils.cpp
-    ${SRC}/server/main.cpp
-    ${SRC}/server/server.cpp
+set(SERVER_SRC_FILES ${SRC}/server/server.cpp
     ${SRC}/server/memory.cpp
     ${SRC}/server/data.cpp
     ${SRC}/server/data-map.cpp
     ${SRC}/server/link-map.cpp)
-target_include_directories(rikerio-server PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
-target_link_libraries(rikerio-server rt dl ${JSONRPC_LIB_SERVER} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
-add_dependencies(rikerio-server ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
 
+set(SERVER_MAIN_FILE ${SRC}/server/main.cpp)
 
-add_executable(rio 
-    ${SRC}/common/config.cpp
-    ${SRC}/common/utils.cpp
-    ${SRC}/client/client.cpp
-    ${SRC}/cli/rio.cpp 
+set(CLI_SRC_FILES ${SRC}/cli/rio.cpp 
     ${SRC}/cli/config-get.cpp
     ${SRC}/cli/memory-alloc.cpp
     ${SRC}/cli/memory-dealloc.cpp
@@ -84,9 +87,33 @@ add_executable(rio
     ${SRC}/cli/link-add.cpp
     ${SRC}/cli/link-remove.cpp
     ${SRC}/cli/link-list.cpp)
+
+# add rikerio library first
+
+add_library(rikerio 
+    ${COMMON_SRC_FILES}
+    ${CLIENT_SRC_FILES})
+
+target_include_directories(rikerio PUBLIC ${INC} ${INC_BINARY} ${JSONCPP_INC} ${JSONRPC_INC})
+add_dependencies(rikerio ${JSONRPC_PREFIX}-build ${JSONCPP_PREFIX}-build)
+
+add_executable(rikerio-server
+    ${COMMON_SRC_FILES}
+    ${SERVER_SRC_FILES}
+    ${SERVER_MAIN_FILE})
+
+target_include_directories(rikerio-server PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
+target_link_libraries(rikerio-server rt dl ${JSONRPC_LIB_SERVER} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
+add_dependencies(rikerio-server ${JSONCPP_PREFIX}-build ${JSONRPC_PREFIX}-build)
+
+
+add_executable(rio 
+    ${COMMON_SRC_FILES}
+    ${CLIENT_SRC_FILES}
+    ${CLI_SRC_FILES})    
 target_include_directories(rio PUBLIC ${JSONCPP_INC} ${JSONRPC_INC} ${PROJECT_SOURCE_DIR}/include ${PROJECT_BINARY_DIR} )
 target_link_libraries(rio rt dl ${JSONRPC_LIB_CLIENT} ${JSONRPC_LIB_COMMON} ${JSONCPP_LIB} pthread)
-add_dependencies(rio ${JSONCPP_PREFIX} ${JSONRPC_PREFIX})
+add_dependencies(rio ${JSONCPP_PREFIX}-build ${JSONRPC_PREFIX}-build)
 
 #[[
 

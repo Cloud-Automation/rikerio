@@ -10,26 +10,9 @@ class MemoryAlloc : public RPCResponse {
 
   public:
 
-    MemoryAlloc(Json::Value& result) : RPCResponse(result) {
-
-        if (!ok()) {
-            return;
-        }
-
-        Json::Value data = result["data"];
-
-        offset = data["offset"].asUInt();
-        token = data["token"].asString();
-
-    }
-
-    unsigned int get_offset() {
-        return offset;
-    }
-
-    const std::string& get_token() {
-        return token;
-    }
+    MemoryAlloc(Json::Value& result);
+    unsigned int get_offset();
+    const std::string& get_token();
 
   private:
 

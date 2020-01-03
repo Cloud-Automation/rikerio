@@ -11,22 +11,10 @@ class MemoryList : public RPCResponse {
 
     class MemoryListItem {
       public:
-        MemoryListItem(unsigned int offset, unsigned int size, int semaphore):
-            offset(offset),
-            size(size),
-            semaphore(semaphore) {}
-
-        unsigned int get_offset () {
-            return offset;
-        }
-
-        unsigned int get_size () {
-            return size;
-        }
-
-        int get_semaphore () {
-            return semaphore;
-        }
+        MemoryListItem(unsigned int offset, unsigned int size, int semaphore);
+        unsigned int get_offset ();
+        unsigned int get_size ();
+        int get_semaphore ();
 
       private:
         const unsigned int offset;
@@ -34,25 +22,8 @@ class MemoryList : public RPCResponse {
         const int semaphore;
     };
 
-    MemoryList(Json::Value& result) : RPCResponse(result) {
-
-        if (!ok()) {
-            return;
-        }
-
-        for (auto a : result["data"]) {
-            std::shared_ptr<MemoryListItem> item = std::make_shared<MemoryListItem>(
-                    a["offset"].asUInt(),
-                    a["size"].asUInt(),
-                    a["semaphore"].asInt());
-            items.push_back(item);
-        }
-
-    }
-
-    std::vector<std::shared_ptr<MemoryListItem>>& get_items() {
-        return items;
-    }
+    MemoryList(Json::Value& result);
+    std::vector<std::shared_ptr<MemoryListItem>>& get_items();
 
   private:
     std::vector<std::shared_ptr<MemoryListItem>> items;

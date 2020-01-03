@@ -1,6 +1,7 @@
 #include "client/client.h"
+#include <iostream>
 
-std::shared_ptr<RikerIO::AbstractResponse> cmd_link_remove(RikerIO::Client& client,
+std::shared_ptr<RikerIO::RPCResponse> cmd_link_remove(RikerIO::Client& client,
         const std::string& pattern,
         std::vector<std::string>& list) {
 
@@ -8,8 +9,8 @@ std::shared_ptr<RikerIO::AbstractResponse> cmd_link_remove(RikerIO::Client& clie
 
     auto response = client.link_remove(req);
 
-    printf("%d\n", response->get_counter());
+    std::cout << response->get_counter() << std::endl;
 
-    return std::static_pointer_cast<RikerIO::AbstractResponse>(response);
+    return response;
 
 }

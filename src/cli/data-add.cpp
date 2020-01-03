@@ -3,7 +3,7 @@
 #include <iostream>
 
 
-std::shared_ptr<RikerIO::AbstractResponse> cmd_data_add(
+std::shared_ptr<RikerIO::RPCResponse> cmd_data_add(
     RikerIO::Client& client,
     const std::string& token,
     const std::string& id,
@@ -20,13 +20,11 @@ std::shared_ptr<RikerIO::AbstractResponse> cmd_data_add(
         index,
         offset);
 
-    auto response = client.data_add(request);
-
-    return std::static_pointer_cast<RikerIO::AbstractResponse>(response);
+    return client.data_add(request);
 
 }
 
-std::shared_ptr<RikerIO::AbstractResponse> cmd_data_add(
+std::shared_ptr<RikerIO::RPCResponse> cmd_data_add(
     RikerIO::Client& client,
     const std::string& token,
     const std::string& id,
@@ -42,8 +40,6 @@ std::shared_ptr<RikerIO::AbstractResponse> cmd_data_add(
         index,
         offset);
 
-    auto response = client.data_add(request);
-
-    return std::static_pointer_cast<RikerIO::AbstractResponse>(response);
+    return client.data_add(request);
 
 }

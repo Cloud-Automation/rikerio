@@ -2,7 +2,7 @@
 #include "jsonrpccpp/client/connectors/unixdomainsocketclient.h"
 #include <iostream>
 
-std::shared_ptr<RikerIO::AbstractResponse> cmd_memory_list(RikerIO::Client& client) {
+std::shared_ptr<RikerIO::RPCResponse> cmd_memory_list(RikerIO::Client& client) {
 
     RikerIO::Request::v1::MemoryList request;
 
@@ -18,6 +18,6 @@ std::shared_ptr<RikerIO::AbstractResponse> cmd_memory_list(RikerIO::Client& clie
 
     }
 
-    return std::static_pointer_cast<RikerIO::AbstractResponse>(response);
+    return response;
 
 }

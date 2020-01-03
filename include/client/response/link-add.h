@@ -8,19 +8,10 @@ namespace Response {
 namespace v1 {
 class LinkAdd : public RPCResponse {
   public:
-    LinkAdd(Json::Value& result) : RPCResponse(result) {
 
-        if (!ok()) {
-            return;
-        }
+    LinkAdd(Json::Value& result);
+    unsigned int get_counter() const;
 
-        counter = result["data"]["counter"].asUInt();
-
-    }
-
-    unsigned int get_counter() const {
-        return counter;
-    }
   private:
     unsigned int counter = 0;
 };

@@ -8,15 +8,16 @@ namespace Request {
 namespace v1 {
 
 class DataList : public RPCRequest<1> {
+
   public:
-    DataList(const std::string& pattern) : RPCRequest<1>(), pattern(pattern) {}
-    Json::Value create_params() override {
-        Json::Value result;
-        result["pattern"] = pattern;
-        return result;
-    }
+
+    DataList(const std::string& pattern);
+    Json::Value create_params() override;
+
   private:
+
     const std::string pattern;
+
 };
 
 }

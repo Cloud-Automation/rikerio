@@ -9,24 +9,8 @@ namespace v1 {
 class LinkRemove : public RPCRequest<1> {
 
   public:
-    LinkRemove(const std::string& pattern, std::vector<std::string> list) :
-        RPCRequest<1>(), pattern(pattern), list(list) {
-    }
-
-    Json::Value create_params () override {
-
-        Json::Value result;
-
-        result["pattern"] = pattern;
-        result["list"] = Json::arrayValue;
-
-        for (auto l : list) {
-            result["list"].append(l);
-        }
-
-        return result;
-
-    }
+    LinkRemove(const std::string& pattern, std::vector<std::string> list);
+    Json::Value create_params () override;
 
   private:
 

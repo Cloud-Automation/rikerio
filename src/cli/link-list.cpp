@@ -33,7 +33,7 @@ bool cmd_link_list_comp_id(
 
 }
 
-std::shared_ptr<RikerIO::AbstractResponse> cmd_link_list(
+std::shared_ptr<RikerIO::RPCResponse> cmd_link_list(
     RikerIO::Client& client,
     const std::string& pattern,
     const std::string& sortBy,
@@ -118,6 +118,6 @@ std::shared_ptr<RikerIO::AbstractResponse> cmd_link_list(
 
     }
 
-    return std::static_pointer_cast<RikerIO::AbstractResponse>(response);
+    return response;
 
 }

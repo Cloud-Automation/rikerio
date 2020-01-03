@@ -6,9 +6,12 @@ set(JSONCPP_BASE_DIR     ${PROJECT_BINARY_DIR}/${JSONCPP_PREFIX}-${JSONCPP_VERSI
 set(JSONCPP_SRC_DIR      ${JSONCPP_BASE_DIR})
 set(JSONCPP_BIN_DIR      ${JSONCPP_BASE_DIR}-build)
 set(JSONCPP_INSTALL_DIR  ${PROJECT_BINARY_DIR}/install)
-set(JSONCPP_INC          ${PROJECT_BINARY_DIR}/install/include)
+set(JSONCPP_INC          ${PROJECT_BINARY_DIR}/${JSONCPP_PREFIX}/src/${JSONCPP_PREFIX}/include ${JSONCPP_BIN_DIR}/include/json)
 set(JSONCPP_LIB          ${JSONCPP_BIN_DIR}/src/lib_json/libjsoncpp.a)
 
+include_directories(${JSONCPP_BIN_DIR}/include/json)
+
+message(STATUS ${JSONCPP_BIN_DIR}/include/json)
 
 ExternalProject_Add(${JSONCPP_PREFIX}
     PREFIX ${JSONCPP_PREFIX}
