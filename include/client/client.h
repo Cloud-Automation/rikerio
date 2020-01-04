@@ -29,6 +29,7 @@
 #include "client/request/link-remove.h"
 #include "client/request/link-list.h"
 
+
 namespace RikerIO {
 
 class Client {

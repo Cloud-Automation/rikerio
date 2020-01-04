@@ -37,10 +37,16 @@ ExternalProject_Add(${JSONRPC_PREFIX}
       -DUNIX_DOMAIN_SOCKET_CLIENT=YES
     LOG_DOWNLOAD 1
     LOG_BUILD 1
-    STEP_TARGETS build
     EXCLUDE_FROM_ALL TRUE
     OPTIONAL
     DEPENDS libjsoncpp)
+
+ExternalProject_Add_Step(${JSONRPC_PREFIX} copy
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${JSONRPC_INSTALL_DIR}/include ${PROJECT_BINARY_DIR}/include/rikerio
+    COMMENT "Copying libjsonrpccpp header files."
+    DEPENDEES install
+    ALWAYS TRUE)
+
 
 message(STATUS "lib jsonrpccpp common ... ${JSONRPC_LIB_COMMON}")
 message(STATUS "lib jsonrpccpp server ... ${JSONRPC_LIB_SERVER}")
