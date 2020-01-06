@@ -9,7 +9,7 @@ std::shared_ptr<RikerIO::RPCResponse> cmd_link_remove(RikerIO::Client& client,
 
     auto response = client.link_remove(req);
 
-    std::cout << response->get_counter() << std::endl;
+    std::cout << response->get_count() << std::endl;
 
     return response;
 

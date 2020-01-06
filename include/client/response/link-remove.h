@@ -11,10 +11,10 @@ class LinkRemove : public RPCResponse {
 
   public:
     LinkRemove(Json::Value& result);
-    unsigned int get_counter () const;
+    unsigned int get_count () const;
 
   private:
-    unsigned int counter = 0;
+    unsigned int count = 0;
 
 };
 using LinkRemovePtr = std::shared_ptr<LinkRemove>;

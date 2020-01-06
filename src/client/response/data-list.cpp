@@ -1,19 +1,19 @@
 #include "client/response/data-list.h"
 
-
-RikerIO::Response::v1::DataList::DataListItem::DataListItem(const std::string& id,
-        const Utils::Datatype datatype,
-        const int semaphore,
-        const unsigned int offset,
-        const unsigned int index,
-        const unsigned int size,
-        const bool is_priv) :
+RikerIO::Response::v1::DataList::DataListItem::DataListItem(
+    const std::string& id,
+    const Utils::Datatype datatype,
+    const unsigned int offset,
+    const unsigned int index,
+    const unsigned int size,
+    const int semaphore,
+    const bool is_priv) :
     id(id),
     datatype(datatype),
-    semaphore(semaphore),
     offset(offset),
     index(index),
     size(size),
+    semaphore(semaphore),
     is_priv(is_priv) { }
 
 const std::string& RikerIO::Response::v1::DataList::DataListItem::get_id() const {
@@ -22,10 +22,6 @@ const std::string& RikerIO::Response::v1::DataList::DataListItem::get_id() const
 
 RikerIO::Utils::Datatype RikerIO::Response::v1::DataList::DataListItem::get_datatype() const {
     return datatype;
-}
-
-int RikerIO::Response::v1::DataList::DataListItem::get_semaphore() const {
-    return semaphore;
 }
 
 unsigned int RikerIO::Response::v1::DataList::DataListItem::get_offset() const {
@@ -38,6 +34,10 @@ unsigned int RikerIO::Response::v1::DataList::DataListItem::get_index() const {
 
 unsigned int RikerIO::Response::v1::DataList::DataListItem::get_size() const {
     return size;
+}
+
+int RikerIO::Response::v1::DataList::DataListItem::get_semaphore() const {
+    return semaphore;
 }
 
 bool RikerIO::Response::v1::DataList::DataListItem::is_private () const {

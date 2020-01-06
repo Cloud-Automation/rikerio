@@ -15,27 +15,27 @@ class DataList : public RikerIO::RPCResponse {
 
         DataListItem(const std::string& id,
                      const Utils::Datatype datatype,
-                     const int semaphore,
                      const unsigned int offset,
                      const unsigned int index,
                      const unsigned int size,
+                     const int semaphore,
                      const bool is_priv);
 
         const std::string& get_id() const;
         Utils::Datatype get_datatype() const;
-        int get_semaphore() const;
         unsigned int get_offset() const;
         unsigned int get_index() const;
         unsigned int get_size() const;
+        int get_semaphore() const;
         bool is_private () const;
 
       private:
         const std::string id;
         const Utils::Datatype datatype;
-        const int semaphore;
         const unsigned int offset;
         const unsigned int index;
         const unsigned int size;
+        const int semaphore;
         const bool is_priv;
 
     };

@@ -20,10 +20,6 @@ if ("${TARGET_ARCH}" STREQUAL "arm")
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE   "armhf")
 endif()
 
-if (${WITH_TESTS})
-    #    add_subdirectory(${PROJECT_SOURCE_DIR}/test)
-endif()
-
 
 include(GetGitRevisionDescription)
 include(version)
@@ -44,6 +40,13 @@ add_subdirectory(${SRC}/common)
 add_subdirectory(${SRC}/server)
 add_subdirectory(${SRC}/client)
 add_subdirectory(${SRC}/cli)
+
+if (${WITH_TESTS})
+    enable_testing()
+
+    add_subdirectory(${PROJECT_SOURCE_DIR}/test)
+endif()
+
 
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rikerio@.service DESTINATION /lib/systemd/system)

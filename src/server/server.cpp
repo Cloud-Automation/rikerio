@@ -75,7 +75,7 @@ void Server::memory_dealloc(const std::string& token) {
 
     /* get offset by token */
 
-    if (memory.getAreaFromToken(token) != nullptr) {
+    if (memory.getAreaFromToken(token) == nullptr) {
         throw ServerError(UNAUTHORIZED_ERROR, "Token not found.");
     }
 
@@ -88,26 +88,6 @@ void Server::memory_dealloc(const std::string& token) {
 
     dataMap.removeByRange(maFromToken->getOffset(), maFromToken->getSize());
 
-    /*    std::set<std::string> dataToBeRemoved;
-
-        for (auto a : dataMap) {
-
-            std::string id = a.first;
-            std::shared_ptr<RikerIO::Data> data = a.second;
-
-            if (data->getOffset() >= maFromToken->getOffset() &&
-                    data->getEnd() <= maFromToken->getEnd()) {
-                dataToBeRemoved.insert(id);
-            }
-
-        }
-
-        for (auto s : dataToBeRemoved) {
-            dataMap.erase(s);
-            dataTokenMap.erase(s);
-            dataMemoryMap.erase(s);
-        }
-    */
 }
 
 void Server::memory_list(MemoryListResponse& response) {

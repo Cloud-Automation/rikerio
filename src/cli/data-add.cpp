@@ -11,14 +11,13 @@ std::shared_ptr<RikerIO::RPCResponse> cmd_data_add(
     unsigned int index,
     unsigned int offset) {
 
-
     RikerIO::Request::v1::DataAdd request(
         id,
         token,
         RikerIO::Utils::GetTypeFromString(type),
-        0,
-        index,
-        offset);
+        RikerIO::Utils::GetBitSize(type),
+        offset,
+        index);
 
     return client.data_add(request);
 
@@ -37,8 +36,8 @@ std::shared_ptr<RikerIO::RPCResponse> cmd_data_add(
         token,
         RikerIO::Utils::Datatype::UNDEFINED,
         size,
-        index,
-        offset);
+        offset,
+        index);
 
     return client.data_add(request);
 

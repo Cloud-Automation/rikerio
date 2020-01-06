@@ -5,15 +5,15 @@ bool cmd_link_list_comp_offset(
     std::shared_ptr<RikerIO::Response::v1::LinkList::LinkListItem> a,
     std::shared_ptr<RikerIO::Response::v1::LinkList::LinkListItem> b) {
 
-    if (!a->get_item() || !b->get_item()) {
+    if (!a->get_data() || !b->get_data()) {
         return false;
     }
 
-    if (a->get_item()->get_offset() == b->get_item()->get_offset()) {
-        return a->get_item()->get_index() < b->get_item()->get_index();
+    if (a->get_data()->get_offset() == b->get_data()->get_offset()) {
+        return a->get_data()->get_index() < b->get_data()->get_index();
     }
 
-    return a->get_item()->get_offset() < b->get_item()->get_offset();
+    return a->get_data()->get_offset() < b->get_data()->get_offset();
 
 }
 
@@ -82,7 +82,7 @@ std::shared_ptr<RikerIO::RPCResponse> cmd_link_list(
                 altId += " ";
             }
 
-            if (!a->get_item()) {
+            if (!a->get_data()) {
 
                 if (!hideEmptyLinks) {
                     printf("%s-       -       -         -     -%-10s%s\n",
@@ -94,17 +94,17 @@ std::shared_ptr<RikerIO::RPCResponse> cmd_link_list(
                 continue;
             }
 
-            std::string sOffset = std::to_string(a->get_item()->get_offset()) + "." + std::to_string(a->get_item()->get_index());
+            std::string sOffset = std::to_string(a->get_data()->get_offset()) + "." + std::to_string(a->get_data()->get_index());
             std::string flags = "";
-            flags += a->get_item()->is_private() ? "P" : "-";
+            flags += a->get_data()->is_private() ? "P" : "-";
 
             printf("%s%-8s%-8d%-10d%-6s%-11s%s\n",
                    altId.c_str(),
                    sOffset.c_str(),
-                   a->get_item()->get_size(),
-                   a->get_item()->get_semaphore(),
+                   a->get_data()->get_size(),
+                   a->get_data()->get_semaphore(),
                    flags.c_str(),
-                   RikerIO::Utils::GetStringFromType(a->get_item()->get_datatype()).c_str(),
+                   RikerIO::Utils::GetStringFromType(a->get_data()->get_datatype()).c_str(),
                    a->get_key().c_str());
         }
 

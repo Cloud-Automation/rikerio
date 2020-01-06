@@ -19,12 +19,12 @@ class LinkList : public RPCResponse {
 
         const std::string& get_key() const;
         const std::string& get_id() const;
-        std::shared_ptr<DataList::DataListItem> get_item() const;
+        std::shared_ptr<DataList::DataListItem> get_data() const;
 
       private:
         const std::string key;
         const std::string id;
-        std::shared_ptr<DataList::DataListItem> item;
+        std::shared_ptr<DataList::DataListItem> data;
     };
 
     LinkList(Json::Value& result);

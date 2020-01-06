@@ -218,13 +218,11 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
                             request["token"].asString() : "";
 
         std::string dId = request["id"].asString();
-        //std::transform(dId.begin(), dId.end(), dId.begin(), ::tolower);
-
         Json::Value data = request["data"];
 
         bool hasType = data["type"] && data["type"].isString();
         bool hasOffset = data["offset"] && data["offset"].isUInt();
-        bool hasIndex = data["index"] && data["index"].isUInt();
+        bool hasIndex = data["index"] && data["index"].isUInt() && data["index"].asUInt() != 0;
         bool hasSize = data["size"] && data["size"].isUInt();
 
         DataCreateRequest req = { RikerIO::Utils::UNDEFINED, 0, 0, 0 };

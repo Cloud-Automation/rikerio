@@ -10,10 +10,10 @@ class LinkAdd : public RPCResponse {
   public:
 
     LinkAdd(Json::Value& result);
-    unsigned int get_counter() const;
+    unsigned int get_count() const;
 
   private:
-    unsigned int counter = 0;
+    unsigned int count = 0;
 };
 using LinkAddPtr = std::shared_ptr<LinkAdd>;
 }

@@ -21,7 +21,6 @@ Json::Value RikerIO::Request::v1::DataAdd::create_params() {
     Json::Value data;
 
     result["id"] = id;
-    result["data"] = data;
     if (token != "") {
         data["token"] = token;
     }
@@ -30,6 +29,8 @@ Json::Value RikerIO::Request::v1::DataAdd::create_params() {
     data["size"] = size;
     data["offset"] = offset;
     data["index"] = index;
+
+    result["data"] = data;
 
     return result;
 
