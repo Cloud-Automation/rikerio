@@ -9,10 +9,10 @@ Json::Value RikerIO::Request::v1::LinkRemove::create_params () {
     Json::Value result;
 
     result["pattern"] = pattern;
-    result["list"] = Json::arrayValue;
+    result["data"] = Json::arrayValue;
 
     for (auto l : list) {
-        result["list"].append(l);
+        result["data"].append(l);
     }
 
     return result;

@@ -1,7 +1,8 @@
 #include "server/server.h"
 #include "common/error.h"
+#include "common/config.h"
 #include "version.h"
-#include <fnmatch.h>
+#include "fnmatch.h"
 
 
 using namespace RikerIO;
@@ -18,9 +19,9 @@ Server::Server(
     id(id),
     size(size),
     cycle(cycle),
-    memory(size, std::string(FOLDER) + "/" + id + "/" + SHM_FILENAME),
+    memory(size, RikerIO::Config::CreateShmPath(id)),
     dataMap(memory),
-    linkMap(std::string(FOLDER) + "/" + id + "/" + LINKS_FILENAME) {
+    linkMap(RikerIO::Config::CreateLinkPath(id)) {
 
 
     linkMap.deserialize();
@@ -62,6 +63,7 @@ void Server::memory_alloc(int size, MemoryAllocResponse& response) {
 
         response.offset = ma->getOffset();
         response.token = ma->getToken();
+        response.semaphore = ma->getSemaphore();
 
     } catch (Token::TokenException& e) {
         throw ServerError(GENTOKEN_ERROR, "Internal Error (1).");

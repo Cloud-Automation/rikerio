@@ -13,7 +13,7 @@ std::shared_ptr<RikerIO::RPCResponse> cmd_memory_list(RikerIO::Client& client) {
         printf("OFFSET\tSIZE\tSEMAPHORE\n");
 
         for (auto a : response->get_items()) {
-            printf("%d\t%d\t%d\n", a->get_offset(), a->get_size(), a->get_semaphore());
+            printf("%d\t%d\t%d\n", a->get_offset(), a->get_size(), a->get_semaphore()->get_id());
         }
 
     }

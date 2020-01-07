@@ -1,6 +1,6 @@
 [
   {
-    "name": "memory.alloc",
+    "name": "v1/memoryAlloc",
     "params": {
       "size": 0
     },
@@ -8,14 +8,13 @@
       "code": 1,
       "data": {
         "token": "generatedToken",
-        "mId": 2,
-        "sId": 3,
-        "offset": 4
+        "offset": 4,
+        "semaphore": 1
       }
     }
   },
   {
-    "name": "memory.dealloc",
+    "name": "v1/memoryDealloc",
     "params": {
       "token": "token"
     },
@@ -24,33 +23,18 @@
     }
   },
   {
-    "name": "memory.list",
+    "name": "v1/memoryList",
     "returns": {
         "code": 0,
         "data": [ { "offset": 0, "size": 16, "semaphore": 0 } ]
     }
   },
   {
-    "name": "memory.get",
+    "name": "v1/dataAdd",
     "params": {
-      "mId": 0,
-    },
-    "returns" : {
-      "code": 1,
-      "data": {
-        "mId": 2,
-        "file": "absolutePath",
-        "offset": 3,
-        "size": 4,
-        "sId": 5
-      }
-    }
-  },
-  {
-    "name": "data.create",
-    "params": {
-      "dId": "dataIdLabel",
+      "id": "id",
       "data" : {
+        "token": "token",
         "type": "dataType",
         "offset": 1,
         "index": 2,
@@ -58,21 +42,31 @@
       }
     },
     "returns": {
-      "code": 3
+      "code": 3,
+      "data": {
+        "id": "id",
+        "offset": 1,
+        "index": 2,
+        "size": 3,
+        "type": "datatype"
+      }
     }
   },
   {
-    "name": "data.remove",
+    "name": "v1/dataRemove",
     "params": {
-      "dId": "dataIdLabel",
-      "secret": "string"
+      "pattern": "pattern",
+      "token": "token(optional)"
     },
     "returns": {
-      "code": 0
+      "code": 0,
+      "data": {
+        "count": 1
+      }
     }
   },
   {
-    "name": "data.list",
+    "name": "v1/dataList",
     "params": {
       "pattern": "pattern"
     },
@@ -92,70 +86,38 @@
     }
   },
   {
-    "name": "data.get",
+    "name": "v1/linkAdd",
     "params": {
-      "dId": "string1"
+      "key": "string1",
+      "data": ["id1", "id2", "id3"]
     },
-    "returns" : {
+    "returns": {
+      "code": 0
+    }
+  },
+  {
+    "name": "v1/linkRemove",
+    "params": {
+      "pattern": "link pattern",
+      "data": ["id1", "id2", "id3"]
+    },
+    "returns": {
       "code": 0,
       "data": {
-        "id": "string3",
-        "type": "datatype",
-        "offset": 1,
-        "index": 2,
-        "size": 3,
-        "sId": 4,
-        "tId": 5
+        "count": 1
       }
     }
   },
   {
-    "name": "link.add",
-    "params": {
-      "lId": "string1",
-      "dId": "string2"
-    },
-    "returns": {
-      "code": 0
-    }
-  },
-  {
-    "name": "link.remove",
-    "params": {
-      "linkId": "string1",
-      "dataId": "string2"
-    },
-    "returns": {
-      "code": 0
-    }
-  },
-  {
-    "name": "link.list",
+    "name": "v1/linkList",
     "params": {
       "pattern": "string1"
     },
     "returns": {
       "code": 0,
-      "data": [ "link.name" ]
-    }
-  },
-  {
-    "name": "link.get",
-    "params": {
-      "id": "string1"
-    },
-    "returns" : {
-      "code": 0,
-      "data": [
-        {
-          "dId": "string1",
-          "type": "datatype",
-          "offset": 2,
-          "index": 3,
-          "size": 4,
-          "sId": 5
-        }
-      ]
+      "data": {
+        "count": 0
+      }
     }
   }
 ]

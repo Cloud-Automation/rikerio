@@ -1,6 +1,7 @@
 #ifndef __RIKERIO_MEMORY_LIST_RESPONSE_H__
 #define __RIKERIO_MEMORY_LIST_RESPONSE_H__
 
+#include "common/semaphore.h"
 #include "client/response.h"
 
 namespace RikerIO {
@@ -11,17 +12,22 @@ class MemoryList : public RPCResponse {
 
     class MemoryListItem {
       public:
+        MemoryListItem(unsigned int offset, unsigned int size, int semaphore, uint8_t* memory_ptr);
         MemoryListItem(unsigned int offset, unsigned int size, int semaphore);
         unsigned int get_offset ();
         unsigned int get_size ();
-        int get_semaphore ();
+
+        std::shared_ptr<Semaphore> get_semaphore();
 
       private:
         const unsigned int offset;
         const unsigned int size;
-        const int semaphore;
+        std::shared_ptr<Semaphore> semaphore;
+
+        uint8_t* alloc_ptr;
     };
 
+    MemoryList(Json::Value& result, uint8_t* memory_ptr);
     MemoryList(Json::Value& result);
     std::vector<std::shared_ptr<MemoryListItem>>& get_items();
 

@@ -19,7 +19,7 @@
 mode_t dirMode = 0770;
 unsigned int running = 1;
 
-static void signalHandler(int sigNo) {
+void signalHandler(int sigNo) {
 
     (void)(sigNo);
 
@@ -27,7 +27,7 @@ static void signalHandler(int sigNo) {
 
 }
 
-static int applyGroupAndRights(const std::string& path, mode_t& mode) {
+int applyGroupAndRights(const std::string& path, mode_t& mode) {
 
     std::string groupName = "rikerio";
 
@@ -58,7 +58,7 @@ static int applyGroupAndRights(const std::string& path, mode_t& mode) {
 
 }
 
-static void checkAndCreateFolder(const std::string& folder, mode_t& dirMode) {
+void checkAndCreateFolder(const std::string& folder, mode_t& dirMode) {
 
     DIR* dir = opendir(folder.c_str());
     if (!dir) {
@@ -69,11 +69,11 @@ static void checkAndCreateFolder(const std::string& folder, mode_t& dirMode) {
 
 }
 
-static void systemd_notify(std::string msg) {
+void systemd_notify(std::string msg) {
+
+    void* systemd_so = dlopen("libsystemd.so", RTLD_NOW);
 
     typedef int (*systemd_notify)(int code, const char *param);
-
-    void *systemd_so = dlopen("libsystemd.so", RTLD_NOW);
 
     if (systemd_so == NULL) {
         printf("No libsystemd.so found. No SystemD notification happening.\n");
@@ -81,7 +81,7 @@ static void systemd_notify(std::string msg) {
     }
 
     systemd_notify *sd_notify = (systemd_notify*) dlsym(systemd_so, "sd_notify");
-    //printf("Notifying systemd (%s).\n", msg.c_str());
+    printf("Notifying systemd (%s).\n", msg.c_str());
     systemd_notify func = (systemd_notify) sd_notify;
     int retVal = func(0, msg.c_str());
 
@@ -94,21 +94,11 @@ static void systemd_notify(std::string msg) {
 }
 
 
-void tearDown(int exitCode, const std::string& profile) {
-
-    /* remove shared memory file */
-
-    std::string socketFile = RikerIO::Config::CreateSocketPath(profile);
-
-    if (unlink(socketFile.c_str()) == -1) {
-        printf("Error removing socket file %s.\n", strerror(errno));
-    }
+void tearDown() {
 
     systemd_notify("STOPPING=1");
 
     printf("Exiting application.\n");
-
-    exit(exitCode);
 
 }
 
@@ -138,24 +128,25 @@ int main(int argc, char** argv) {
 
     CLI11_PARSE(app, argc, argv);
 
-    std::string socketFile = RikerIO::Config::CreateSocketPath(profile);
-
     checkAndCreateFolder(RikerIO::Config::BaseFolder, dirMode);
 
-    if (applyGroupAndRights(RikerIO::Config::BaseFolder, dirMode) != 1) {
+    if (applyGroupAndRights(RikerIO::Config::CreateBasePath(), dirMode) != 1) {
         fprintf(stderr, "Error applying rights to Temp. Root Folder (%s).\n", strerror(errno));
-        tearDown(EXIT_FAILURE, profile);
+        tearDown();
+        return EXIT_FAILURE;
     }
 
     checkAndCreateFolder(RikerIO::Config::CreateProfilePath(profile), dirMode);
 
     if (applyGroupAndRights(RikerIO::Config::CreateProfilePath(profile), dirMode) != 1) {
-        fprintf(stderr, "Error applying rights Temp. Profle Folder (%s).\n", strerror(errno));
-        tearDown(EXIT_FAILURE, profile);
+        fprintf(stderr, "Error applying user-/grouprights to Profle Folder (%s).\n", strerror(errno));
+        tearDown();
+        return EXIT_FAILURE;
     }
 
 
     try {
+        std::string socketFile = RikerIO::Config::CreateSocketPath(profile);
 
         jsonrpc::UnixDomainSocketServer socket(socketFile, 1);
 
@@ -165,7 +156,8 @@ int main(int argc, char** argv) {
 
             if (applyGroupAndRights(socketFile, dirMode) != 1) {
                 fprintf(stderr, "Error applying rights to Socket File (%s).\n", strerror(errno));
-                tearDown(EXIT_FAILURE, profile);
+                tearDown();
+                return EXIT_FAILURE;
             }
 
 
@@ -188,6 +180,8 @@ int main(int argc, char** argv) {
         printf("%s\n", e.what());
     }
 
-    tearDown(EXIT_SUCCESS, profile);
+    tearDown();
+
+    return EXIT_SUCCESS;
 
 }

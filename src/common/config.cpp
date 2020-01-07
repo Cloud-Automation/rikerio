@@ -5,6 +5,10 @@ const std::string RikerIO::Config::SocketFile = "socket";
 const std::string RikerIO::Config::ShmFile = "shm";
 const std::string RikerIO::Config::LinkFile = "links";
 
+const std::string RikerIO::Config::CreateBasePath() {
+    return RikerIO::Config::BaseFolder;
+}
+
 const std::string RikerIO::Config::CreateProfilePath (const std::string& profile) {
     return RikerIO::Config::BaseFolder + "/" + profile;
 }

@@ -27,7 +27,8 @@ class LinkList : public RPCResponse {
         std::shared_ptr<DataList::DataListItem> data;
     };
 
-    LinkList(Json::Value& result);
+    LinkList(Json::Value& result, uint8_t* memory_ptr = NULL);
+
     const std::string& get_key() const;
     const std::string& get_id() const;
     const std::vector<std::shared_ptr<LinkListItem>> get_items() const;

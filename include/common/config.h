@@ -14,6 +14,7 @@ class Config {
     static const std::string ShmFile;
     static const std::string LinkFile;
 
+    static const std::string CreateBasePath ();
     static const std::string CreateProfilePath (const std::string& profile);
     static const std::string CreateSocketPath (const std::string& profile);
     static const std::string CreateShmPath (const std::string& profile);

@@ -19,7 +19,8 @@ class DataList : public RikerIO::RPCResponse {
                      const unsigned int index,
                      const unsigned int size,
                      const int semaphore,
-                     const bool is_priv);
+                     const bool is_priv,
+                     uint8_t* memory_ptr);
 
         const std::string& get_id() const;
         Utils::Datatype get_datatype() const;
@@ -28,6 +29,7 @@ class DataList : public RikerIO::RPCResponse {
         unsigned int get_size() const;
         int get_semaphore() const;
         bool is_private () const;
+        uint8_t* get_data_ptr() const;
 
       private:
         const std::string id;
@@ -38,9 +40,12 @@ class DataList : public RikerIO::RPCResponse {
         const int semaphore;
         const bool is_priv;
 
+        uint8_t* data_ptr;
+
     };
 
     DataList(Json::Value& result);
+    DataList(Json::Value& result, uint8_t* memory_ptr);
     std::vector<std::shared_ptr<DataListItem>> get_items();
 
   private:

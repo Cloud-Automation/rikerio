@@ -6,5 +6,6 @@ file(COPY ${INC}/common DESTINATION ${PROJECT_BINARY_DIR}/include/rikerio)
 
 
 set(COMMON_SRC_FILES 
+    ${SRC}/common/semaphore.cpp
     ${SRC}/common/config.cpp 
     ${SRC}/common/utils.cpp PARENT_SCOPE)

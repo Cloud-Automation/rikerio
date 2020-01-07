@@ -52,17 +52,28 @@ Memory::Memory(unsigned int size, std::string filename) :
 
     umask(oldMask);
 
-    close(fd);
 
     ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
+    if ((void*) -1 == ptr) {
+        throw InternalError(strerror(errno));
+    }
+
+    if (mlockall(MLOCK_ONFAULT) != 0) {
+        throw InternalError(strerror(errno));
+    }
+
+    close(fd);
 
 }
 
 Memory::~Memory() {
 
+    munlockall();
+
     munmap(ptr, size);
     unlink(filename.c_str());
+
 
 }
 

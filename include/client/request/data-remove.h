@@ -9,7 +9,7 @@ namespace v1 {
 class DataRemove : public RikerIO::RPCRequest<1> {
   public:
 
-    DataRemove(const std::string& pattern, const std::string& token);
+    DataRemove(const std::string& pattern, const std::string& token = "");
     Json::Value create_params() override;
 
   private:

@@ -7,14 +7,16 @@ RikerIO::Response::v1::DataList::DataListItem::DataListItem(
     const unsigned int index,
     const unsigned int size,
     const int semaphore,
-    const bool is_priv) :
+    const bool is_priv,
+    uint8_t* memory_ptr) :
     id(id),
     datatype(datatype),
     offset(offset),
     index(index),
     size(size),
     semaphore(semaphore),
-    is_priv(is_priv) { }
+    is_priv(is_priv),
+    data_ptr(memory_ptr + offset) { }
 
 const std::string& RikerIO::Response::v1::DataList::DataListItem::get_id() const {
     return id;
@@ -44,8 +46,14 @@ bool RikerIO::Response::v1::DataList::DataListItem::is_private () const {
     return is_priv;
 }
 
+uint8_t* RikerIO::Response::v1::DataList::DataListItem::get_data_ptr() const {
+    return data_ptr;
+}
 
-RikerIO::Response::v1::DataList::DataList(Json::Value& result)  : RPCResponse(result) {
+RikerIO::Response::v1::DataList::DataList(Json::Value& result) :
+    RikerIO::Response::v1::DataList::DataList(result, NULL) { }
+
+RikerIO::Response::v1::DataList::DataList(Json::Value& result, uint8_t* memory_ptr)  : RPCResponse(result) {
 
     if (!ok()) {
         return;
@@ -60,7 +68,8 @@ RikerIO::Response::v1::DataList::DataList(Json::Value& result)  : RPCResponse(re
                 a["index"].asUInt(),
                 a["size"].asUInt(),
                 a["semaphore"].asInt(),
-                a["private"].asBool());
+                a["private"].asBool(),
+                memory_ptr);
 
         items.push_back(item);
 

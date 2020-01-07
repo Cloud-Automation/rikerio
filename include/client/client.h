@@ -35,6 +35,16 @@ namespace RikerIO {
 class Client {
   public:
 
+    class SharedMemoryError : public std::exception {
+      private:
+        const std::string msg;
+      public:
+        SharedMemoryError(const std::string msg) : std::exception(), msg(msg) { }
+        const std::string& getMessage() {
+            return msg;
+        }
+    };
+
     /**
      * @params profile
      */
@@ -60,6 +70,9 @@ class Client {
     Client(jsonrpc::IClientConnector&);
 
   private:
+
+    uint8_t* memory_ptr;
+
     const std::string socketFile;
     std::shared_ptr<jsonrpc::UnixDomainSocketClient> socketClient;
     jsonrpc::Client rpcClient;

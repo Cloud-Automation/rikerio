@@ -10,11 +10,11 @@ Json::Value RikerIO::Request::v1::LinkAdd::create_params() {
     Json::Value result;
     Json::Value data = Json::arrayValue;
     result["key"] = key;
-    result["data"] = data;
 
     for (auto l : list) {
         data.append(l);
     }
+    result["data"] = data;
 
     return result;
 

@@ -18,7 +18,7 @@ RikerIO::Response::v1::LinkList::LinkListItem::get_data() const {
     return data;
 }
 
-RikerIO::Response::v1::LinkList::LinkList(Json::Value& result) : RPCResponse(result) {
+RikerIO::Response::v1::LinkList::LinkList(Json::Value& result, uint8_t* memory_ptr) : RPCResponse(result) {
 
     if (!ok()) {
         return;
@@ -41,7 +41,8 @@ RikerIO::Response::v1::LinkList::LinkList(Json::Value& result) : RPCResponse(res
                             data["index"].asUInt(),
                             data["size"].asUInt(),
                             data["semaphore"].asInt(),
-                            data["private"].asBool());
+                            data["private"].asBool(),
+                            memory_ptr);
 
             linkItem = std::make_shared<LinkListItem>(a["key"].asString(), a["id"].asString(), item);
 

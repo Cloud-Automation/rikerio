@@ -1,24 +1,15 @@
 #include "gtest/gtest.h"
+#include "helper.h"
 #include "client/response.h"
 #include "client/response/config-get.h"
 #include "client/response/memory-alloc.h"
 #include "client/response/memory-list.h"
+#include "client/response/data-add.h"
 #include "client/response/data-remove.h"
 #include "client/response/data-list.h"
 #include "client/response/link-add.h"
 #include "client/response/link-remove.h"
 #include "client/response/link-list.h"
-
-void JsonParse(const std::string& str, Json::Value& root) {
-
-    JSONCPP_STRING err;
-    Json::CharReaderBuilder builder;
-
-    const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-
-    reader->parse(str.c_str(), str.c_str() + str.length(), &root, &err);
-
-}
 
 TEST(Response, CreateWithErrorJson) {
 
@@ -34,7 +25,7 @@ TEST(Response, CreateWithErrorJson) {
 
 }
 
-TEST(ConfigGet, CreateWithValidResponse) {
+TEST(Response, ConfigGet) {
 
     std::string responseStr = "{\"code\": 0, \"data\": { \"id\": \"default\", \"version\": \"3.0.0\", \"shm\":\"/var/lib/rikerio/default/shm\",\"size\":4096,\"cycle\":10000 }}";
     Json::Value responseJson;
@@ -52,9 +43,9 @@ TEST(ConfigGet, CreateWithValidResponse) {
 
 }
 
-TEST(MemoryAlloc, CreateWithValidResponse) {
+TEST(Response, MemoryAlloc) {
 
-    std::string responseStr = "{\"code\":0,\"data\":{\"offset\": 1024,\"token\": \"abc123\"}}";
+    std::string responseStr = "{\"code\":0,\"data\":{\"offset\": 1024,\"token\": \"abc123\",\"semaphore\":123}}";
     Json::Value responseJson;
 
     JsonParse(responseStr, responseJson);
@@ -63,10 +54,11 @@ TEST(MemoryAlloc, CreateWithValidResponse) {
 
     ASSERT_EQ(response.get_offset(), 1024);
     ASSERT_STREQ(response.get_token().c_str(), "abc123");
+    ASSERT_EQ(response.get_semaphore()->get_id(), 123);
 
 }
 
-TEST(MemoryList, CreateWithValidResponse) {
+TEST(Response, MemoryList) {
 
     std::string responseStr = "{\"code\":0,\"data\":[{\"offset\":1024,\"size\":23,\"semaphore\":123},{\"offset\":1025,\"size\":24,\"semaphore\":124},{\"offset\":1026,\"size\":25,\"semaphore\":125}]";
     Json::Value responseJson;
@@ -79,19 +71,36 @@ TEST(MemoryList, CreateWithValidResponse) {
 
     ASSERT_EQ(response.get_items()[0]->get_offset(), 1024);
     ASSERT_EQ(response.get_items()[0]->get_size(), 23);
-    ASSERT_EQ(response.get_items()[0]->get_semaphore(), 123);
+    ASSERT_EQ(response.get_items()[0]->get_semaphore()->get_id(), 123);
 
     ASSERT_EQ(response.get_items()[1]->get_offset(), 1025);
     ASSERT_EQ(response.get_items()[1]->get_size(), 24);
-    ASSERT_EQ(response.get_items()[1]->get_semaphore(), 124);
+    ASSERT_EQ(response.get_items()[1]->get_semaphore()->get_id(), 124);
 
     ASSERT_EQ(response.get_items()[2]->get_offset(), 1026);
     ASSERT_EQ(response.get_items()[2]->get_size(), 25);
-    ASSERT_EQ(response.get_items()[2]->get_semaphore(), 125);
+    ASSERT_EQ(response.get_items()[2]->get_semaphore()->get_id(), 125);
 
 }
 
-TEST(DataRemove, CreateWithValidResponse) {
+TEST(Response, DataAdd) {
+
+    std::string responseStr = "{\"code\":0,\"data\": {\"id\":\"data-id-a\",\"offset\":1,\"index\":2,\"size\":3,\"type\":\"int8\"}}";
+    Json::Value responseJson;
+
+    JsonParse(responseStr, responseJson);
+
+    RikerIO::Response::v1::DataAdd response(responseJson);
+
+    ASSERT_STREQ("data-id-a", response.get_id().c_str());
+    ASSERT_EQ(1, response.get_offset());
+    ASSERT_EQ(2, response.get_index());
+    ASSERT_EQ(3, response.get_size());
+    ASSERT_EQ(RikerIO::Utils::Datatype::INT8, response.get_type());
+
+}
+
+TEST(Response, DataRemove) {
 
     std::string responseStr = "{\"code\":0,\"data\":{\"count\":3}}";
     Json::Value responseJson;
@@ -104,7 +113,7 @@ TEST(DataRemove, CreateWithValidResponse) {
 
 }
 
-TEST(DataList, CreateWithValidResponse) {
+TEST(Response, DataList) {
 
     std::string responseStr = "{\"code\":0,\"data\":[{\"id\":\"data-id-a\",\"type\":\"int8\",\"offset\":1,\"index\":2,\"size\":3,\"semaphore\":4,\"private\":true},{\"id\":\"data-id-b\",\"type\":\"float\",\"offset\":5,\"index\":6,\"size\":7,\"semaphore\":8,\"private\":false},{\"id\":\"data-id-c\",\"type\":\"undefined\",\"offset\":9,\"index\":10,\"size\":11,\"semaphore\":12,\"private\":false}]}";
     Json::Value responseJson;
@@ -141,7 +150,7 @@ TEST(DataList, CreateWithValidResponse) {
 
 }
 
-TEST(LinkAdd, CreateWithValidResponse) {
+TEST(Response, LinkAdd) {
 
     std::string responseStr = "{\"code\":0,\"data\":{\"count\":7}}";
     Json::Value responseJson;
@@ -154,7 +163,7 @@ TEST(LinkAdd, CreateWithValidResponse) {
 
 }
 
-TEST(LinkRemove, CreateWithValidResponse) {
+TEST(Response, LinkRemove) {
 
     std::string responseStr = "{\"code\":0,\"data\":{\"count\":7}}";
     Json::Value responseJson;
@@ -167,7 +176,7 @@ TEST(LinkRemove, CreateWithValidResponse) {
 
 }
 
-TEST(LinkList, CreateWithValidResponse) {
+TEST(Response, LinkList) {
 
     std::string responseStr = "{\"code\":0,\"data\":[{\"key\":\"link-key-a\",\"id\":\"data-id-a\"},{\"key\":\"link-key-b\",\"id\":\"data-id-b\",\"data\":{\"id\":\"data-id-c\",\"type\":\"int8\",\"offset\":1,\"index\":2,\"size\":3,\"semaphore\":4,\"private\":true}},{\"key\":\"link-key-c\",\"id\":\"data-id-d\",\"data\":{\"id\":\"data-id-e\",\"type\":\"float\",\"offset\":5,\"index\":6,\"size\":7,\"semaphore\":8,\"private\":false}}]}";
     Json::Value responseJson;

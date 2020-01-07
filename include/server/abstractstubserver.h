@@ -51,7 +51,7 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
                                jsonrpc::JSON_OBJECT,
                                "data", jsonrpc::JSON_OBJECT,
                                "id", jsonrpc::JSON_STRING, NULL),
-            &AbstractStubServer::data_createI);
+            &AbstractStubServer::data_addI);
 
         this->bindAndAddMethod(
             jsonrpc::Procedure("v1/dataRemove", jsonrpc::PARAMS_BY_NAME,
@@ -140,6 +140,7 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
             response["data"] = Json::objectValue;
             response["data"]["offset"] = res.offset;
             response["data"]["token"] = res.token;
+            response["data"]["semaphore"] = res.semaphore;
 
         } catch (ServerError e) {
 
@@ -212,7 +213,7 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
 
     }
 
-    inline virtual void data_createI(const Json::Value &request, Json::Value &response) {
+    inline virtual void data_addI(const Json::Value &request, Json::Value &response) {
 
         std::string token = (request["token"] && request["token"].isString()) ?
                             request["token"].asString() : "";
@@ -252,6 +253,12 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
 
             data_create(token, dId, req);
             response["code"] = RikerIO::NO_ERROR;
+            response["data"] = Json::objectValue;
+            response["data"]["id"] = dId;
+            response["data"]["type"] = RikerIO::Utils::GetStringFromType(req.type);
+            response["data"]["size"] = req.size;
+            response["data"]["offset"] = req.offset;
+            response["data"]["index"] = req.index;
 
         } catch (ServerError e) {
             response["code"] = e.getCode();
@@ -468,6 +475,7 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
     struct MemoryAllocResponse {
         unsigned int offset;
         std::string token;
+        int semaphore;
     };
 
     struct MemoryListResponse {
