@@ -14,9 +14,10 @@ RikerIO::Response::v1::DataList::DataListItem::DataListItem(
     offset(offset),
     index(index),
     size(size),
-    semaphore(semaphore),
     is_priv(is_priv),
-    data_ptr(memory_ptr + offset) { }
+    data_ptr(memory_ptr + offset),
+    semaphore(std::make_shared<RikerIO::Semaphore>(semaphore)) {
+}
 
 const std::string& RikerIO::Response::v1::DataList::DataListItem::get_id() const {
     return id;
@@ -38,7 +39,7 @@ unsigned int RikerIO::Response::v1::DataList::DataListItem::get_size() const {
     return size;
 }
 
-int RikerIO::Response::v1::DataList::DataListItem::get_semaphore() const {
+std::shared_ptr<RikerIO::Semaphore> RikerIO::Response::v1::DataList::DataListItem::get_semaphore() const {
     return semaphore;
 }
 

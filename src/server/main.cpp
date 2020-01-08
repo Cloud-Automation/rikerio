@@ -16,6 +16,8 @@
 #include <dlfcn.h>
 #include <signal.h>
 
+#include "spdlog/spdlog.h"
+
 mode_t dirMode = 0770;
 unsigned int running = 1;
 
@@ -35,7 +37,7 @@ int applyGroupAndRights(const std::string& path, mode_t& mode) {
     struct group* grp = getgrnam(groupName.c_str());
 
     if (!grp) {
-        fprintf(stderr, "No group '%s' found, create user group '%s'.\n", groupName.c_str(), groupName.c_str());
+        spdlog::error("No group {} found.", groupName);
         return EXIT_FAILURE;
     }
 
@@ -43,12 +45,12 @@ int applyGroupAndRights(const std::string& path, mode_t& mode) {
     mode_t oldMask = umask(0);
 
     if (chown(path.c_str(), -1, grp->gr_gid) != 0) {
-        fprintf(stderr, "Error setting group '%s' on '%s'.\n", groupName.c_str(), path.c_str());
+        spdlog::error("Error setting group {} on {}.", groupName, path);
         return -1;
     }
 
     if (chmod(path.c_str(), mode) != 0) {
-        fprintf(stderr, "Error setting permissions on '%s'.\n", path.c_str());
+        spdlog::error("Error setting permissions on {}.", path);
         return -1;
     }
 
@@ -76,17 +78,17 @@ void systemd_notify(std::string msg) {
     typedef int (*systemd_notify)(int code, const char *param);
 
     if (systemd_so == NULL) {
-        printf("No libsystemd.so found. No SystemD notification happening.\n");
+        spdlog::warn("No libsystemd.so found. No SystemD notification possible.");
         return;
     }
 
     systemd_notify *sd_notify = (systemd_notify*) dlsym(systemd_so, "sd_notify");
-    printf("Notifying systemd (%s).\n", msg.c_str());
+    spdlog::info("Notifying SystemD ({}).", msg);
     systemd_notify func = (systemd_notify) sd_notify;
     int retVal = func(0, msg.c_str());
 
     if (retVal < 0) {
-        printf("Error notifying (sd_notify) SystemD (%d).\n", retVal);
+        spdlog::error("Error notifying (sd_notify) SystemD ({}).", retVal);
     }
 
     dlclose(systemd_so);
@@ -112,6 +114,7 @@ int main(int argc, char** argv) {
     std::string profile = "default";
     unsigned int size = 4096;
     unsigned int cycle = 10000;
+    bool debug = false;
 
     CLI::App app;
 
@@ -119,19 +122,25 @@ int main(int argc, char** argv) {
     app.add_option("-s,--size", size, "Shared Memory Bytesize", 4096);
     app.add_option("-c,--cycle", cycle, "Cycletime in us", 10000);
 
+
     auto printVersion = [](int /*count*/) {
         printf("%s\n", RIO_VERSION);
         exit(EXIT_SUCCESS);
     };
 
     app.add_flag_function("-v,--version", printVersion, "Print version");
+    app.add_flag("-d,--debug", debug, "Print debug messages.");
 
     CLI11_PARSE(app, argc, argv);
+
+    if (debug) {
+        spdlog::set_level(spdlog::level::debug);
+    }
 
     checkAndCreateFolder(RikerIO::Config::BaseFolder, dirMode);
 
     if (applyGroupAndRights(RikerIO::Config::CreateBasePath(), dirMode) != 1) {
-        fprintf(stderr, "Error applying rights to Temp. Root Folder (%s).\n", strerror(errno));
+        spdlog::error("Error applying rights to project folder {}.", strerror(errno));
         tearDown();
         return EXIT_FAILURE;
     }
@@ -139,7 +148,7 @@ int main(int argc, char** argv) {
     checkAndCreateFolder(RikerIO::Config::CreateProfilePath(profile), dirMode);
 
     if (applyGroupAndRights(RikerIO::Config::CreateProfilePath(profile), dirMode) != 1) {
-        fprintf(stderr, "Error applying user-/grouprights to Profle Folder (%s).\n", strerror(errno));
+        spdlog::error("Error applying user-/group rights to profile folder {}.", strerror(errno));
         tearDown();
         return EXIT_FAILURE;
     }
@@ -155,13 +164,13 @@ int main(int argc, char** argv) {
         if (server.StartListening()) {
 
             if (applyGroupAndRights(socketFile, dirMode) != 1) {
-                fprintf(stderr, "Error applying rights to Socket File (%s).\n", strerror(errno));
+                spdlog::error("Error applying rights to socket file {}.", strerror(errno));
                 tearDown();
                 return EXIT_FAILURE;
             }
 
+            spdlog::info("RikerIO Server Version {}.", RIO_VERSION_STRING);
 
-            printf("Server started listening...\n");
             systemd_notify("READY=1");
 
             while (running == 1) {
@@ -172,7 +181,7 @@ int main(int argc, char** argv) {
 
         } else {
 
-            printf("Error listening\n");
+            spdlog::error("Error listening on socket file.");
 
         }
 

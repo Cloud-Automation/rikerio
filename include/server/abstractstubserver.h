@@ -5,6 +5,7 @@
 #include <jsonrpccpp/server.h>
 #include <algorithm>
 
+#include "spdlog/spdlog.h"
 #include "common/error.h"
 #include "server/data.h"
 #include "server/memory.h"
@@ -66,18 +67,6 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
             &AbstractStubServer::data_listI);
 
         this->bindAndAddMethod(
-            jsonrpc::Procedure("v1/dataGet", jsonrpc::PARAMS_BY_NAME,
-                               jsonrpc::JSON_STRING, "dId",
-                               jsonrpc::JSON_OBJECT, NULL),
-            &AbstractStubServer::data_getI);
-
-        this->bindAndAddMethod(
-            jsonrpc::Procedure("v1/dataRemove", jsonrpc::PARAMS_BY_NAME,
-                               jsonrpc::JSON_STRING, "pattern",
-                               jsonrpc::JSON_OBJECT, NULL),
-            &AbstractStubServer::data_getI);
-
-        this->bindAndAddMethod(
             jsonrpc::Procedure("v1/linkAdd", jsonrpc::PARAMS_BY_NAME,
                                jsonrpc::JSON_OBJECT, "key", jsonrpc::JSON_STRING, NULL),
             &AbstractStubServer::link_addI);
@@ -94,16 +83,12 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
                                jsonrpc::JSON_STRING, NULL),
             &AbstractStubServer::link_listI);
 
-        this->bindAndAddMethod(
-            jsonrpc::Procedure("v1/linkGet", jsonrpc::PARAMS_BY_NAME,
-                               jsonrpc::JSON_STRING, "lId",
-                               jsonrpc::JSON_OBJECT, NULL),
-            &AbstractStubServer::link_getI);
-
     }
 
 
-    inline virtual void configI(const Json::Value& /*request */, Json::Value& response) {
+    inline virtual void configI(const Json::Value& request, Json::Value& response) {
+
+        spdlog::debug("Request : {}", request.toStyledString());
 
         try {
 
@@ -118,17 +103,21 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
             response["data"]["size"] = res.size;
             response["data"]["cycle"] = res.defaultCycle;
 
-        }  catch (ServerError e) {
+        }  catch (ServerError& e) {
 
             response["code"] = e.getCode();
             response["message"] = e.getMsg();
 
         }
 
+        spdlog::debug("Response {}", response.toStyledString());
+
 
     }
 
     inline virtual void memory_allocI(const Json::Value &request, Json::Value &response) {
+
+        spdlog::debug("Request : {}", request.toStyledString());
 
         try {
 
@@ -142,16 +131,20 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
             response["data"]["token"] = res.token;
             response["data"]["semaphore"] = res.semaphore;
 
-        } catch (ServerError e) {
+        } catch (ServerError& e) {
 
             response["code"] = e.getCode();
             response["message"] = e.getMsg();
 
         }
 
+        spdlog::debug("Response {}", response.toStyledString());
+
     }
 
     inline virtual void memory_deallocI(const Json::Value &request, Json::Value &response) {
+
+        spdlog::debug("Request : {}", request.toStyledString());
 
         try {
 
@@ -159,16 +152,20 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
 
             response["code"] = RikerIO::Error::NO_ERROR;
 
-        } catch (ServerError e) {
+        } catch (ServerError& e) {
 
             response["code"] = e.getCode();
             response["message"] = e.getMsg();
 
         }
 
+        spdlog::debug("Response {}", response.toStyledString());
+
     }
 
-    inline virtual void memory_listI(const Json::Value &/*request*/, Json::Value &response) {
+    inline virtual void memory_listI(const Json::Value & request, Json::Value &response) {
+
+        spdlog::debug("Request : {}", request.toStyledString());
 
         MemoryListResponse res;
 
@@ -188,9 +185,13 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
 
         }
 
+        spdlog::debug("Response {}", response.toStyledString());
+
     }
 
     inline virtual void memory_getI(const Json::Value& request, Json::Value &response) {
+
+        spdlog::debug("Request : {}", request.toStyledString());
 
         try {
 
@@ -206,14 +207,18 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
             response["code"] = RikerIO::NO_ERROR;
             response["data"] = item;
 
-        } catch (ServerError e) {
+        } catch (ServerError& e) {
             response["code"] = e.getCode();
             response["message"] = e.getMsg();
         }
 
+        spdlog::debug("Response {}", response.toStyledString());
+
     }
 
     inline virtual void data_addI(const Json::Value &request, Json::Value &response) {
+
+        spdlog::debug("Request : {}", request.toStyledString());
 
         std::string token = (request["token"] && request["token"].isString()) ?
                             request["token"].asString() : "";
@@ -260,16 +265,19 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
             response["data"]["offset"] = req.offset;
             response["data"]["index"] = req.index;
 
-        } catch (ServerError e) {
+        } catch (ServerError& e) {
             response["code"] = e.getCode();
             response["message"] = e.getMsg();
         }
 
+        spdlog::debug("Response {}", response.toStyledString());
 
     }
 
 
     inline virtual void data_removeI(const Json::Value &request, Json::Value &response) {
+
+        spdlog::debug("Request : {}", request.toStyledString());
 
         try {
 
@@ -284,15 +292,19 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
             response["data"] = Json::objectValue;
             response["data"]["count"] = res.count;
 
-        } catch (ServerError e) {
+        } catch (ServerError& e) {
             response["code"] = e.getCode();
             response["message"] = e.getMsg();
         }
+
+        spdlog::debug("Response {}", response.toStyledString());
 
     }
 
 
     inline virtual void data_listI(const Json::Value &request, Json::Value &response) {
+
+        spdlog::debug("Request : {}", request.toStyledString());
 
         try {
 
@@ -319,21 +331,21 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
             response["code"] = 0;
             response["data"] = resData;
 
-        } catch (ServerError e) {
+        } catch (ServerError& e) {
 
             response["code"] = e.getCode();
             response["message"] = e.getMsg();
 
         }
 
+        spdlog::debug("Response {}", response.toStyledString());
 
     }
 
 
-    inline virtual void data_getI(const Json::Value &request, Json::Value &response) {
-        response = this->data_get(request["id"].asString());
-    }
     inline virtual void link_addI(const Json::Value &request, Json::Value &response) {
+
+        spdlog::debug("Request : {}", request.toStyledString());
 
         std::vector<std::string> dataIds;
 
@@ -372,9 +384,14 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
         response["data"] = Json::objectValue;
         response["data"]["counter"] = counter;
 
+        spdlog::debug("Response {}", response.toStyledString());
+
     }
 
     inline virtual void link_removeI(const Json::Value &request, Json::Value &response) {
+
+        spdlog::debug("Request : {}", request.toStyledString());
+
         std::vector<std::string> dataIds;
 
         if (request["data"] && !request["data"].isArray()) {
@@ -407,9 +424,13 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
         response["data"] = Json::objectValue;
         response["data"]["counter"] = counter;
 
+        spdlog::debug("Response {}", response.toStyledString());
+
     }
 
     inline virtual void link_listI(const Json::Value &request, Json::Value &response) {
+
+        spdlog::debug("Request : {}", request.toStyledString());
 
         LinkListResponse res;
 
@@ -442,12 +463,10 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
 
         }
 
+        spdlog::debug("Response {}", response.toStyledString());
+
     }
 
-
-    inline virtual void link_getI(const Json::Value &request, Json::Value &response) {
-        response = this->link_get(request["id"].asString());
-    }
 
     class ServerError : public std::exception {
       public:
@@ -542,8 +561,6 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
         const std::string& pattern,
         DataListResponse& response) = 0;
 
-    virtual Json::Value data_get(const std::string& dId) = 0;
-
     virtual void link_add(
         const std::string& linkname,
         std::vector<std::string>& dataIds,
@@ -554,9 +571,9 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
         std::vector<std::string>& data_ids,
         unsigned int&) = 0;
 
-    virtual void link_list(const std::string& pattern, LinkListResponse&) = 0;
-
-    virtual Json::Value link_get(const std::string& lId) = 0;
+    virtual void link_list(
+        const std::string& pattern,
+        LinkListResponse&) = 0;
 
 };
 

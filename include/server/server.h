@@ -21,7 +21,13 @@ namespace RikerIO {
 class Server : public AbstractStubServer {
 
   public:
-    Server(jsonrpc::UnixDomainSocketServer&, const std::string&, unsigned int, unsigned int);
+
+    Server(
+        jsonrpc::UnixDomainSocketServer&,
+        const std::string&,
+        unsigned int,
+        unsigned int);
+
     ~Server();
 
     void get_config(ConfigResponse&);

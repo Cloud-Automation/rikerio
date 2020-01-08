@@ -27,5 +27,5 @@ let g:formatdef_astyle_google_cpp = '"astyle --style=google"'
 let g:formatters_cpp = ['astyle_google_cpp']
 
 let g:ale_linters = { 'cpp' : ['g++'] }
-let g:ale_cpp_gcc_options = '-Iinclude -Ibuild/debug/gtest-install/include -Ibuild/debug/include/rikerio -Itest -Wall -pedantic -Wextra -std=c++11'
+let g:ale_cpp_gcc_options = '-Iinclude -Ibuild/debug/spdlog/src/spdlog/include -Ibuild/debug/gtest-install/include -Ibuild/debug/include/rikerio -Itest -Wall -pedantic -Wextra -std=c++11'
 

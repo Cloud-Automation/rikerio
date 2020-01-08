@@ -1,6 +1,7 @@
 #ifndef __RIKERIO_DATA_LIST_RESPONSE_H__
 #define __RIKERIO_DATA_LIST_RESPONSE_H__
 
+#include "common/semaphore.h"
 #include "common/utils.h"
 #include "client/response.h"
 
@@ -27,7 +28,7 @@ class DataList : public RikerIO::RPCResponse {
         unsigned int get_offset() const;
         unsigned int get_index() const;
         unsigned int get_size() const;
-        int get_semaphore() const;
+        std::shared_ptr<Semaphore> get_semaphore() const;
         bool is_private () const;
         uint8_t* get_data_ptr() const;
 
@@ -37,10 +38,11 @@ class DataList : public RikerIO::RPCResponse {
         const unsigned int offset;
         const unsigned int index;
         const unsigned int size;
-        const int semaphore;
         const bool is_priv;
 
         uint8_t* data_ptr;
+
+        std::shared_ptr<Semaphore> semaphore;
 
     };
 

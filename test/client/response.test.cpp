@@ -129,7 +129,7 @@ TEST(Response, DataList) {
     ASSERT_EQ(response.get_items()[0]->get_offset(), 1);
     ASSERT_EQ(response.get_items()[0]->get_index(), 2);
     ASSERT_EQ(response.get_items()[0]->get_size(), 3);
-    ASSERT_EQ(response.get_items()[0]->get_semaphore(), 4);
+    ASSERT_EQ(response.get_items()[0]->get_semaphore()->get_id(), 4);
     ASSERT_TRUE(response.get_items()[0]->is_private());
 
     ASSERT_STREQ(response.get_items()[1]->get_id().c_str(), "data-id-b");
@@ -137,7 +137,7 @@ TEST(Response, DataList) {
     ASSERT_EQ(response.get_items()[1]->get_offset(), 5);
     ASSERT_EQ(response.get_items()[1]->get_index(), 6);
     ASSERT_EQ(response.get_items()[1]->get_size(), 7);
-    ASSERT_EQ(response.get_items()[1]->get_semaphore(), 8);
+    ASSERT_EQ(response.get_items()[1]->get_semaphore()->get_id(), 8);
     ASSERT_FALSE(response.get_items()[1]->is_private());
 
     ASSERT_STREQ(response.get_items()[2]->get_id().c_str(), "data-id-c");
@@ -145,7 +145,7 @@ TEST(Response, DataList) {
     ASSERT_EQ(response.get_items()[2]->get_offset(), 9);
     ASSERT_EQ(response.get_items()[2]->get_index(), 10);
     ASSERT_EQ(response.get_items()[2]->get_size(), 11);
-    ASSERT_EQ(response.get_items()[2]->get_semaphore(), 12);
+    ASSERT_EQ(response.get_items()[2]->get_semaphore()->get_id(), 12);
     ASSERT_FALSE(response.get_items()[2]->is_private());
 
 }
@@ -199,7 +199,7 @@ TEST(Response, LinkList) {
     ASSERT_EQ(response.get_items()[1]->get_data()->get_offset(), 1);
     ASSERT_EQ(response.get_items()[1]->get_data()->get_index(), 2);
     ASSERT_EQ(response.get_items()[1]->get_data()->get_size(), 3);
-    ASSERT_EQ(response.get_items()[1]->get_data()->get_semaphore(), 4);
+    ASSERT_EQ(response.get_items()[1]->get_data()->get_semaphore()->get_id(), 4);
     ASSERT_TRUE(response.get_items()[1]->get_data()->is_private());
 
     ASSERT_STREQ(response.get_items()[2]->get_key().c_str(), "link-key-c");
@@ -210,7 +210,7 @@ TEST(Response, LinkList) {
     ASSERT_EQ(response.get_items()[2]->get_data()->get_offset(), 5);
     ASSERT_EQ(response.get_items()[2]->get_data()->get_index(), 6);
     ASSERT_EQ(response.get_items()[2]->get_data()->get_size(), 7);
-    ASSERT_EQ(response.get_items()[2]->get_data()->get_semaphore(), 8);
+    ASSERT_EQ(response.get_items()[2]->get_data()->get_semaphore()->get_id(), 8);
     ASSERT_FALSE(response.get_items()[2]->get_data()->is_private());
 
 

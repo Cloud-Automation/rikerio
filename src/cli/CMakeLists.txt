@@ -8,7 +8,8 @@ set(CLI_SRC_FILES ${SRC}/cli/rio.cpp
     ${SRC}/cli/data-remove.cpp
     ${SRC}/cli/link-add.cpp
     ${SRC}/cli/link-remove.cpp
-    ${SRC}/cli/link-list.cpp)
+    ${SRC}/cli/link-list.cpp
+    ${SRC}/cli/read.cpp)
 
 add_executable(rio ${CLI_SRC_FILES})   
 target_link_libraries(rio rikerio)

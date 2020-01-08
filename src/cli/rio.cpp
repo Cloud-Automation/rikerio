@@ -12,6 +12,8 @@ std::shared_ptr<RikerIO::RPCResponse> cmd_data_add(RikerIO::Client&, const std::
 std::shared_ptr<RikerIO::RPCResponse> cmd_data_remove(RikerIO::Client&, const std::string&, const std::string&);
 std::shared_ptr<RikerIO::RPCResponse> cmd_data_list(RikerIO::Client&, const std::string&, bool, const std::string, bool);
 
+int cmd_read(std::vector<std::string>&, RikerIO::Client&);
+
 std::shared_ptr<RikerIO::RPCResponse> cmd_link_add(
     RikerIO::Client&,
     const std::string&,
@@ -45,8 +47,21 @@ void clientHandler(
 
     exit(EXIT_SUCCESS);
 
+}
+
+void simpleClientHandler(
+    const std::string& profile,
+    std::function<int(RikerIO::Client&)> handler) {
+
+    RikerIO::Client rpcClient(profile);
+
+    int res = handler(rpcClient);
+
+    exit(res);
+
 
 }
+
 
 int main(int argc, char** argv) {
 
@@ -63,6 +78,7 @@ int main(int argc, char** argv) {
     auto memoryApp = app.add_subcommand("memory", "Memory related commands.");
     auto dataApp = app.add_subcommand("data", "Data related commands.");
     auto linkApp = app.add_subcommand("link", "Link related commands.");
+    auto readApp = app.add_subcommand("read", "Read data/link values.");
 
     auto memoryAllocApp = memoryApp->add_subcommand("alloc", "Allocate Memory.");
     auto memoryDeallocApp = memoryApp->add_subcommand("dealloc", "Deallocate Memory.");
@@ -127,6 +143,12 @@ int main(int argc, char** argv) {
         std::vector<std::string> list;
     } linkRemoveReq;
 
+
+    struct {
+        std::string pattern = "";
+        std::vector<std::string> list;
+    } readReq;
+
     memoryAllocApp->add_option("-s,--size", memoryAllocReq.size, "Allocation Bytesize")->required();
     memoryAllocApp->add_flag("-t", memoryAllocReq.tokenOnly, "Return token only");
     memoryDeallocApp->add_option("-t,--token", memoryDeallocReq.token, "Allocation Token.")->required();
@@ -179,6 +201,8 @@ int main(int argc, char** argv) {
 
     linkRemoveApp->add_option("linkname", linkRemoveReq.pattern, "Link ID")->required();
     linkRemoveApp->add_option("data", linkRemoveReq.list, "Data IDs.");
+
+    readApp->add_option("pattern", readReq.list, "Data/List patterns")->required();
 
     configApp->callback([&] () {
         clientHandler(profile, [](RikerIO::Client& client) {
@@ -259,6 +283,12 @@ int main(int argc, char** argv) {
     linkListApp->callback([&] () {
         clientHandler(profile, [&](RikerIO::Client& client) {
             return cmd_link_list(client, linkListReq.pattern, linkListReq.sortBy, linkListReq.extendedList, linkListReq.sortDesc, linkListReq.hideEmptyLinks);
+        });
+    });
+
+    readApp->callback([&]() {
+        simpleClientHandler(profile, [&](RikerIO::Client& client) {
+            return cmd_read(readReq.list, client);
         });
     });
 

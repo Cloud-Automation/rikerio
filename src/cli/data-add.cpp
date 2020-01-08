@@ -1,5 +1,4 @@
 #include "client/client.h"
-#include "jsonrpccpp/client/connectors/unixdomainsocketclient.h"
 #include <iostream>
 
 

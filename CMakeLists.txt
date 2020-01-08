@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 3.2.0)
 project (RikerIO CXX)
+set (CMAKE_CXX_COMPILER g++)
 set (CMAKE_CXX_STANDARD 11)
 include(ExternalProject)
 
@@ -26,6 +27,7 @@ include(version)
 include(cpack)
 include(jsoncpp)
 include(json-rpc-cpp)
+include(spdlog)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/rikerio/version.h)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/bin/install.sh ${CMAKE_CURRENT_BINARY_DIR}/postinst)
