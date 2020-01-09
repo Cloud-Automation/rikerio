@@ -1,4 +1,6 @@
+
 #include "server/server.h"
+#include "spdlog/spdlog.h"
 #include "common/error.h"
 #include "common/config.h"
 #include "version.h"
@@ -122,15 +124,17 @@ void Server::memory_get(int offset, MemoryGetResponse& response) {
 
 }
 
-void Server::data_create(
-    const std::string& token,
+void Server::data_add(
     const std::string& id,
-    const DataCreateRequest& data) {
+    DataAddRequest& req,
+    DataAddResponse& res) {
+
+    spdlog::debug("data_add({},{},{},{})",id, req.token, req.type.to_string(), req.offset.to_string());
 
     std::shared_ptr<MemoryArea> memArea = nullptr;
     std::shared_ptr<Data> entry = nullptr;
 
-    bool hasToken = token.length() > 0;
+    bool hasToken = req.token.length() > 0;
 
     if (!Data::isValidId(id)) {
         throw ServerError(BAD_REQUEST, "Data ID is not valid.");
@@ -140,25 +144,45 @@ void Server::data_create(
 
     if (hasToken) {
 
-        memArea = memory.getAreaFromToken(token);
+        memArea = memory.getAreaFromToken(req.token);
 
         if (!memArea) {
             throw ServerError(UNAUTHORIZED_ERROR, "Token not found.");
         }
 
+        spdlog::debug("found a valid token.");
+
+    } else {
+
+        memArea = memory.getAreaFromRange(req.offset.get_byte_offset(), req.type.get_byte_size());
+
     }
 
-    std::shared_ptr<RikerIO::Data> d = std::make_shared<RikerIO::Data>(
-                                           data.type,
-                                           memArea ? data.offset + memArea->getOffset() : data.offset,
-                                           data.index,
-                                           data.size);
+    if (!memArea) {
+        throw ServerError(BAD_REQUEST, "Data not inside memory area.");
+    }
+
+    spdlog::debug("found a valid memory area.");
 
     if (hasToken) {
-        dataMap.add(id, token, d);
-    } else {
-        dataMap.add(id, d);
+        spdlog::debug("adding offset.");
+        req.offset.add_byte_offset(memArea->getOffset());
     }
+
+    std::shared_ptr<RikerIO::Data> d = std::make_shared<RikerIO::Data>(req.type, req.offset);
+
+    bool value = false;
+    if (hasToken) {
+        value = dataMap.add(id, req.token, d);
+    } else {
+        value = dataMap.add(id, d);
+    }
+
+    spdlog::debug("Adding data result {}.", value);
+
+    res.type = req.type;
+    res.offset = req.offset;
+    res.semaphore = memArea->getSemaphore();
 
 }
 
@@ -211,19 +235,18 @@ void Server::data_list(const std::string& pattern, DataListResponse& response) {
             continue;
         }
 
-        DataListResponseItem item;
 
         std::shared_ptr<RikerIO::Data> data = d.second;
 
         bool isPrivate = dataMap.isPrivate(d.first);
 
-        item.dId = d.first;
-        item.offset = data->getOffset();
-        item.index = data->getIndex();
-        item.size = data->getSize();
-        item.type = RikerIO::Utils::GetStringFromType(data->getType());
-        item.semaphore = dataMap.getSemaphore(d.first);
-        item.isPrivate = isPrivate;
+        DataListResponseItem item = {
+            d.first,
+            data->get_offset(),
+            data->get_type(),
+            dataMap.getSemaphore(d.first),
+            isPrivate
+        };
 
         response.list.push_back(item);
 
@@ -306,39 +329,38 @@ void Server::link_list(const std::string& pattern, AbstractStubServer::LinkListR
             return;
         }
 
-        LinkListItem linkItem;
-
-        linkItem.key = key;
 
         auto d = dataMap.find(data_id);
 
         if (d != dataMap.end()) {
 
-            DataListResponseItem dataItem;
 
             std::shared_ptr<RikerIO::Data> data = d->second;
 
             bool isPrivate = dataMap.isPrivate(d->first);
 
-            dataItem.dId = d->first;
-            dataItem.offset = data->getOffset();
-            dataItem.index = data->getIndex();
-            dataItem.size = data->getSize();
-            dataItem.type = RikerIO::Utils::GetStringFromType(data->getType());
-            dataItem.semaphore = dataMap.getSemaphore(d->first);
-            dataItem.isPrivate = isPrivate;
+            DataListResponseItem data_item = {
+                d->first,
+                data->get_offset(),
+                data->get_type(),
+                dataMap.getSemaphore(d->first),
+                isPrivate
+            };
 
-            linkItem.has_data = true;
-            linkItem.data_item = dataItem;
+            LinkListItem linkItem =  { key, true, data_item };
+            response.list.push_back(linkItem);
 
         } else {
 
+            LinkListItem linkItem = { key, false, { data_id, MemoryPosition(), Type(), -1, false } };
+
             linkItem.has_data = false;
-            linkItem.data_item.dId = data_id;
+            linkItem.data_item.id = data_id;
+
+            response.list.push_back(linkItem);
 
         }
 
-        response.list.push_back(linkItem);
 
     });
 

@@ -38,7 +38,7 @@ TEST(Request, MemoryDealloc) {
 
 TEST(Request, DataAdd) {
 
-    std::string exRequestStr = "{\"id\":\"data-id-a\",\"data\":{\"token\":\"token-a\",\"type\":\"int8\",\"offset\":10,\"index\":1,\"size\":8}}";
+    std::string exRequestStr = "{\"id\":\"data-id-a\",\"data\":{\"token\":\"token-a\",\"type\":\"int8\",\"offset\":\"10.1\"}}";
     Json::Value exRequestJson;
 
     JsonParse(exRequestStr, exRequestJson);
@@ -46,10 +46,8 @@ TEST(Request, DataAdd) {
     RikerIO::Request::v1::DataAdd request(
         "data-id-a",
         "token-a",
-        RikerIO::Utils::Datatype::INT8,
-        8,
-        10,
-        1);
+        RikerIO::Type("int8"),
+        RikerIO::MemoryPosition("10.1"));
 
     AssertJsonEqual(exRequestJson, request.create_params());
 

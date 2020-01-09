@@ -1,14 +1,15 @@
 #include "client/client.h"
+#include "memory"
 #include "common/CLI11.h"
-#include <memory>
+#include "common/type.h"
+#include "common/mem-position.h"
 
 std::shared_ptr<RikerIO::RPCResponse> cmd_config_get(RikerIO::Client&);
 std::shared_ptr<RikerIO::RPCResponse> cmd_memory_alloc(RikerIO::Client&, unsigned int, bool);
 std::shared_ptr<RikerIO::RPCResponse> cmd_memory_dealloc(RikerIO::Client&, const std::string&);
 std::shared_ptr<RikerIO::RPCResponse> cmd_memory_list(RikerIO::Client&);
 
-std::shared_ptr<RikerIO::RPCResponse> cmd_data_add(RikerIO::Client&, const std::string&, const std::string&, const std::string&, unsigned int, unsigned int);
-std::shared_ptr<RikerIO::RPCResponse> cmd_data_add(RikerIO::Client&, const std::string&, const std::string&, unsigned int, unsigned int, unsigned int);
+std::shared_ptr<RikerIO::RPCResponse> cmd_data_add(RikerIO::Client&, const std::string&, const std::string&, RikerIO::Type&, RikerIO::MemoryPosition&);
 std::shared_ptr<RikerIO::RPCResponse> cmd_data_remove(RikerIO::Client&, const std::string&, const std::string&);
 std::shared_ptr<RikerIO::RPCResponse> cmd_data_list(RikerIO::Client&, const std::string&, bool, const std::string, bool);
 
@@ -106,11 +107,11 @@ int main(int argc, char** argv) {
 
     struct {
         std::string id = "";
-        RikerIO::Utils::Datatype type = RikerIO::Utils::Datatype::UNDEFINED;
         std::string token = "";
-        unsigned int size = 0;
-        unsigned int index = 0;
-        unsigned int offset = 0;
+        std::string typeStr = "";
+        std::string offsetStr = "";
+        RikerIO::Type type;
+        RikerIO::MemoryPosition offset;
     } dataAddReq;
 
     struct {
@@ -155,31 +156,33 @@ int main(int argc, char** argv) {
 
     dataAddApp->add_option("label", dataAddReq.id, "Id")->required();
     dataAddApp->add_option("-t,--token", dataAddReq.token, "Memory Token");
-    dataAddApp->add_option("-i,--index", dataAddReq.index, "Bitindex (for datatypes < 8 bit)");
-    dataAddApp->add_option("-o,--offset", dataAddReq.offset, "Offset, global when no token, local otherwise.")->required();
+    dataAddApp->add_option("-o,--offset", dataAddReq.offsetStr, "Offset, global when no token, local otherwise.")
+    ->required()
+    ->check([&] (const std::string& val) {
+
+        try {
+            dataAddReq.offset = RikerIO::MemoryPosition(val);
+        } catch (...) {
+            return std::string("Not a valid type/size.");
+        }
+        return std::string();
+    });
 
     std::string datatypeTmp = "";
 
-    dataAddApp->add_option("-d,--datatype",
-                           datatypeTmp,
+    dataAddApp->add_option("-d,--type",
+                           dataAddReq.typeStr,
                            "Use Datatypes like bit, uint8, int32, float etc. or simple bit/byte sizes like 1bit, 7bit, 1byte etc.")
     ->required()
     ->expected(1)
     ->check([&] (const std::string& val) {
 
-        dataAddReq.type = RikerIO::Utils::GetTypeFromString(val);
-
-        if (dataAddReq.type != RikerIO::Utils::Datatype::UNDEFINED) {
-            dataAddReq.size = RikerIO::Utils::DatatypeSize[dataAddReq.type];
-            return std::string();
+        try {
+            dataAddReq.type = RikerIO::Type(val);
+        } catch (...) {
+            return std::string("Not a valid type/size.");
         }
-
-        if (RikerIO::Utils::IsWordSize(val)) {
-            dataAddReq.size = RikerIO::Utils::GetBitSize(val);
-            return std::string();
-        }
-
-        return std::string("Not a valid type/size.");
+        return std::string();
     });
 
     dataListApp->add_option("pattern", dataListReq.pattern, "Filter pattern.");
@@ -230,27 +233,14 @@ int main(int argc, char** argv) {
 
     dataAddApp->callback([&] () {
 
-        if (dataAddReq.type != RikerIO::Utils::Datatype::UNDEFINED) {
-            clientHandler(profile, [&](RikerIO::Client& client) {
-                return cmd_data_add(
-                           client,
-                           dataAddReq.token,
-                           dataAddReq.id,
-                           RikerIO::Utils::GetStringFromType(dataAddReq.type),
-                           dataAddReq.index,
-                           dataAddReq.offset);
-            });
-        } else {
-            clientHandler(profile, [&](RikerIO::Client& client) {
-                return cmd_data_add(
-                           client,
-                           dataAddReq.token,
-                           dataAddReq.id,
-                           dataAddReq.size,
-                           dataAddReq.index,
-                           dataAddReq.offset);
-            });
-        }
+        clientHandler(profile, [&](RikerIO::Client& client) {
+            return cmd_data_add(
+                       client,
+                       dataAddReq.id,
+                       dataAddReq.token,
+                       dataAddReq.type,
+                       dataAddReq.offset);
+        });
 
     });
 

@@ -9,12 +9,10 @@ RikerIO::Response::v1::DataAdd::DataAdd(Json::Value& result, uint8_t* memory_ptr
     }
 
     id = result["data"]["id"].asString();
-    offset = result["data"]["offset"].asUInt();
-    index = result["data"]["index"].asUInt();
-    size = result["data"]["size"].asUInt();
-    type = RikerIO::Utils::GetTypeFromString(result["data"]["type"].asString());
+    offset = RikerIO::MemoryPosition(result["data"]["offset"].asString());
+    type = RikerIO::Type(result["data"]["type"].asString());
 
-    data_ptr = memory_ptr + offset;
+    data_ptr = memory_ptr + offset.get_byte_offset();
 
 }
 
@@ -22,19 +20,11 @@ const std::string& RikerIO::Response::v1::DataAdd::get_id() const {
     return id;
 }
 
-unsigned int RikerIO::Response::v1::DataAdd::get_offset() const {
+RikerIO::MemoryPosition& RikerIO::Response::v1::DataAdd::get_offset() {
     return offset;
 }
 
-unsigned int RikerIO::Response::v1::DataAdd::get_index() const {
-    return index;
-}
-
-unsigned int RikerIO::Response::v1::DataAdd::get_size() const {
-    return size;
-}
-
-RikerIO::Utils::Datatype RikerIO::Response::v1::DataAdd::get_type() const {
+const RikerIO::Type& RikerIO::Response::v1::DataAdd::get_type() const {
     return type;
 }
 

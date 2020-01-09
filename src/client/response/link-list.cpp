@@ -36,10 +36,8 @@ RikerIO::Response::v1::LinkList::LinkList(Json::Value& result, uint8_t* memory_p
 
             auto item = std::make_shared<DataList::DataListItem>(
                             data["id"].asString(),
-                            Utils::GetTypeFromString(data["type"].asString()),
-                            data["offset"].asUInt(),
-                            data["index"].asUInt(),
-                            data["size"].asUInt(),
+                            Type(data["type"].asString()),
+                            MemoryPosition(data["offset"].asString()),
                             data["semaphore"].asInt(),
                             data["private"].asBool(),
                             memory_ptr);

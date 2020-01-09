@@ -85,7 +85,7 @@ TEST(Response, MemoryList) {
 
 TEST(Response, DataAdd) {
 
-    std::string responseStr = "{\"code\":0,\"data\": {\"id\":\"data-id-a\",\"offset\":1,\"index\":2,\"size\":3,\"type\":\"int8\"}}";
+    std::string responseStr = "{\"code\":0,\"data\": {\"id\":\"data-id-a\",\"offset\":\"1.2\",\"type\":\"3bit\"}}";
     Json::Value responseJson;
 
     JsonParse(responseStr, responseJson);
@@ -93,10 +93,8 @@ TEST(Response, DataAdd) {
     RikerIO::Response::v1::DataAdd response(responseJson);
 
     ASSERT_STREQ("data-id-a", response.get_id().c_str());
-    ASSERT_EQ(1, response.get_offset());
-    ASSERT_EQ(2, response.get_index());
-    ASSERT_EQ(3, response.get_size());
-    ASSERT_EQ(RikerIO::Utils::Datatype::INT8, response.get_type());
+    ASSERT_STREQ("3bit", response.get_type().to_string().c_str());
+    ASSERT_STREQ("1.2", response.get_offset().to_string().c_str());
 
 }
 
@@ -115,7 +113,7 @@ TEST(Response, DataRemove) {
 
 TEST(Response, DataList) {
 
-    std::string responseStr = "{\"code\":0,\"data\":[{\"id\":\"data-id-a\",\"type\":\"int8\",\"offset\":1,\"index\":2,\"size\":3,\"semaphore\":4,\"private\":true},{\"id\":\"data-id-b\",\"type\":\"float\",\"offset\":5,\"index\":6,\"size\":7,\"semaphore\":8,\"private\":false},{\"id\":\"data-id-c\",\"type\":\"undefined\",\"offset\":9,\"index\":10,\"size\":11,\"semaphore\":12,\"private\":false}]}";
+    std::string responseStr = "{\"code\":0,\"data\":[{\"id\":\"data-id-a\",\"type\":\"int8\",\"offset\":\"1.2\",\"semaphore\":4,\"private\":true},{\"id\":\"data-id-b\",\"type\":\"float\",\"offset\":\"5.6\",\"semaphore\":8,\"private\":false},{\"id\":\"data-id-c\",\"type\":\"3byte\",\"offset\":\"9.0\",\"semaphore\":12,\"private\":false}]}";
     Json::Value responseJson;
 
     JsonParse(responseStr, responseJson);
@@ -125,26 +123,20 @@ TEST(Response, DataList) {
     ASSERT_EQ(response.get_items().size(), 3);
 
     ASSERT_STREQ(response.get_items()[0]->get_id().c_str(), "data-id-a");
-    ASSERT_EQ(response.get_items()[0]->get_datatype(), RikerIO::Utils::Datatype::INT8);
-    ASSERT_EQ(response.get_items()[0]->get_offset(), 1);
-    ASSERT_EQ(response.get_items()[0]->get_index(), 2);
-    ASSERT_EQ(response.get_items()[0]->get_size(), 3);
+    ASSERT_STREQ(response.get_items()[0]->get_type().to_string().c_str(), "int8");
+    ASSERT_STREQ(response.get_items()[0]->get_offset().to_string().c_str(), "1.2");
     ASSERT_EQ(response.get_items()[0]->get_semaphore()->get_id(), 4);
     ASSERT_TRUE(response.get_items()[0]->is_private());
 
     ASSERT_STREQ(response.get_items()[1]->get_id().c_str(), "data-id-b");
-    ASSERT_EQ(response.get_items()[1]->get_datatype(), RikerIO::Utils::Datatype::FLOAT);
-    ASSERT_EQ(response.get_items()[1]->get_offset(), 5);
-    ASSERT_EQ(response.get_items()[1]->get_index(), 6);
-    ASSERT_EQ(response.get_items()[1]->get_size(), 7);
+    ASSERT_STREQ(response.get_items()[1]->get_type().to_string().c_str(), "float");
+    ASSERT_STREQ(response.get_items()[1]->get_offset().to_string().c_str(), "5.6");
     ASSERT_EQ(response.get_items()[1]->get_semaphore()->get_id(), 8);
     ASSERT_FALSE(response.get_items()[1]->is_private());
 
     ASSERT_STREQ(response.get_items()[2]->get_id().c_str(), "data-id-c");
-    ASSERT_EQ(response.get_items()[2]->get_datatype(), RikerIO::Utils::Datatype::UNDEFINED);
-    ASSERT_EQ(response.get_items()[2]->get_offset(), 9);
-    ASSERT_EQ(response.get_items()[2]->get_index(), 10);
-    ASSERT_EQ(response.get_items()[2]->get_size(), 11);
+    ASSERT_STREQ(response.get_items()[2]->get_type().to_string().c_str(), "3byte");
+    ASSERT_STREQ(response.get_items()[2]->get_offset().to_string().c_str(), "9.0");
     ASSERT_EQ(response.get_items()[2]->get_semaphore()->get_id(), 12);
     ASSERT_FALSE(response.get_items()[2]->is_private());
 
@@ -178,7 +170,7 @@ TEST(Response, LinkRemove) {
 
 TEST(Response, LinkList) {
 
-    std::string responseStr = "{\"code\":0,\"data\":[{\"key\":\"link-key-a\",\"id\":\"data-id-a\"},{\"key\":\"link-key-b\",\"id\":\"data-id-b\",\"data\":{\"id\":\"data-id-c\",\"type\":\"int8\",\"offset\":1,\"index\":2,\"size\":3,\"semaphore\":4,\"private\":true}},{\"key\":\"link-key-c\",\"id\":\"data-id-d\",\"data\":{\"id\":\"data-id-e\",\"type\":\"float\",\"offset\":5,\"index\":6,\"size\":7,\"semaphore\":8,\"private\":false}}]}";
+    std::string responseStr = "{\"code\":0,\"data\":[{\"key\":\"link-key-a\",\"id\":\"data-id-a\"},{\"key\":\"link-key-b\",\"id\":\"data-id-b\",\"data\":{\"id\":\"data-id-c\",\"type\":\"int8\",\"offset\":\"1.2\",\"semaphore\":4,\"private\":true}},{\"key\":\"link-key-c\",\"id\":\"data-id-d\",\"data\":{\"id\":\"data-id-e\",\"type\":\"float\",\"offset\":\"5.6\",\"semaphore\":8,\"private\":false}}]}";
     Json::Value responseJson;
 
     JsonParse(responseStr, responseJson);
@@ -195,10 +187,8 @@ TEST(Response, LinkList) {
     ASSERT_STREQ(response.get_items()[1]->get_id().c_str(), "data-id-b");
     ASSERT_NE(response.get_items()[1]->get_data(), nullptr);
     ASSERT_STREQ(response.get_items()[1]->get_data()->get_id().c_str(), "data-id-c");
-    ASSERT_EQ(response.get_items()[1]->get_data()->get_datatype(), RikerIO::Utils::Datatype::INT8);
-    ASSERT_EQ(response.get_items()[1]->get_data()->get_offset(), 1);
-    ASSERT_EQ(response.get_items()[1]->get_data()->get_index(), 2);
-    ASSERT_EQ(response.get_items()[1]->get_data()->get_size(), 3);
+    ASSERT_STREQ(response.get_items()[1]->get_data()->get_type().to_string().c_str(), "int8");
+    ASSERT_STREQ(response.get_items()[1]->get_data()->get_offset().to_string().c_str(), "1.2");
     ASSERT_EQ(response.get_items()[1]->get_data()->get_semaphore()->get_id(), 4);
     ASSERT_TRUE(response.get_items()[1]->get_data()->is_private());
 
@@ -206,12 +196,9 @@ TEST(Response, LinkList) {
     ASSERT_STREQ(response.get_items()[2]->get_id().c_str(), "data-id-d");
     ASSERT_NE(response.get_items()[2]->get_data(), nullptr);
     ASSERT_STREQ(response.get_items()[2]->get_data()->get_id().c_str(), "data-id-e");
-    ASSERT_EQ(response.get_items()[2]->get_data()->get_datatype(), RikerIO::Utils::Datatype::FLOAT);
-    ASSERT_EQ(response.get_items()[2]->get_data()->get_offset(), 5);
-    ASSERT_EQ(response.get_items()[2]->get_data()->get_index(), 6);
-    ASSERT_EQ(response.get_items()[2]->get_data()->get_size(), 7);
+    ASSERT_STREQ(response.get_items()[2]->get_data()->get_type().to_string().c_str(), "float");
+    ASSERT_STREQ(response.get_items()[2]->get_data()->get_offset().to_string().c_str(), "5.6");
     ASSERT_EQ(response.get_items()[2]->get_data()->get_semaphore()->get_id(), 8);
     ASSERT_FALSE(response.get_items()[2]->get_data()->is_private());
-
 
 }

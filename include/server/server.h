@@ -57,10 +57,10 @@ class Server : public AbstractStubServer {
      *
      */
 
-    void data_create(
-        const std::string& token,
-        const std::string& dId,
-        const DataCreateRequest&);
+    void data_add(
+        const std::string& id,
+        DataAddRequest&,
+        DataAddResponse&);
 
     void data_remove(
         const std::string& pattern,

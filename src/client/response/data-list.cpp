@@ -2,20 +2,16 @@
 
 RikerIO::Response::v1::DataList::DataListItem::DataListItem(
     const std::string& id,
-    const Utils::Datatype datatype,
-    const unsigned int offset,
-    const unsigned int index,
-    const unsigned int size,
+    RikerIO::Type type,
+    RikerIO::MemoryPosition offset,
     const int semaphore,
     const bool is_priv,
     uint8_t* memory_ptr) :
     id(id),
-    datatype(datatype),
+    type(type),
     offset(offset),
-    index(index),
-    size(size),
     is_priv(is_priv),
-    data_ptr(memory_ptr + offset),
+    data_ptr(memory_ptr + offset.get_byte_offset()),
     semaphore(std::make_shared<RikerIO::Semaphore>(semaphore)) {
 }
 
@@ -23,20 +19,12 @@ const std::string& RikerIO::Response::v1::DataList::DataListItem::get_id() const
     return id;
 }
 
-RikerIO::Utils::Datatype RikerIO::Response::v1::DataList::DataListItem::get_datatype() const {
-    return datatype;
+const RikerIO::Type& RikerIO::Response::v1::DataList::DataListItem::get_type() const {
+    return type;
 }
 
-unsigned int RikerIO::Response::v1::DataList::DataListItem::get_offset() const {
+RikerIO::MemoryPosition& RikerIO::Response::v1::DataList::DataListItem::get_offset() {
     return offset;
-}
-
-unsigned int RikerIO::Response::v1::DataList::DataListItem::get_index() const {
-    return index;
-}
-
-unsigned int RikerIO::Response::v1::DataList::DataListItem::get_size() const {
-    return size;
 }
 
 std::shared_ptr<RikerIO::Semaphore> RikerIO::Response::v1::DataList::DataListItem::get_semaphore() const {
@@ -64,10 +52,8 @@ RikerIO::Response::v1::DataList::DataList(Json::Value& result, uint8_t* memory_p
 
         std::shared_ptr<DataListItem> item = std::make_shared<DataListItem>(
                 a["id"].asString(),
-                Utils::GetTypeFromString(a["type"].asString()),
-                a["offset"].asUInt(),
-                a["index"].asUInt(),
-                a["size"].asUInt(),
+                Type(a["type"].asString()),
+                MemoryPosition(a["offset"].asString()),
                 a["semaphore"].asInt(),
                 a["private"].asBool(),
                 memory_ptr);

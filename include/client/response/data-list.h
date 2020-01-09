@@ -2,7 +2,8 @@
 #define __RIKERIO_DATA_LIST_RESPONSE_H__
 
 #include "common/semaphore.h"
-#include "common/utils.h"
+#include "common/type.h"
+#include "common/mem-position.h"
 #include "client/response.h"
 
 namespace RikerIO {
@@ -15,29 +16,23 @@ class DataList : public RikerIO::RPCResponse {
       public:
 
         DataListItem(const std::string& id,
-                     const Utils::Datatype datatype,
-                     const unsigned int offset,
-                     const unsigned int index,
-                     const unsigned int size,
+                     RikerIO::Type type,
+                     RikerIO::MemoryPosition offset,
                      const int semaphore,
                      const bool is_priv,
                      uint8_t* memory_ptr);
 
         const std::string& get_id() const;
-        Utils::Datatype get_datatype() const;
-        unsigned int get_offset() const;
-        unsigned int get_index() const;
-        unsigned int get_size() const;
+        const RikerIO::Type& get_type() const;
+        RikerIO::MemoryPosition& get_offset();
         std::shared_ptr<Semaphore> get_semaphore() const;
         bool is_private () const;
         uint8_t* get_data_ptr() const;
 
       private:
         const std::string id;
-        const Utils::Datatype datatype;
-        const unsigned int offset;
-        const unsigned int index;
-        const unsigned int size;
+        RikerIO::Type type;
+        RikerIO::MemoryPosition offset;
         const bool is_priv;
 
         uint8_t* data_ptr;

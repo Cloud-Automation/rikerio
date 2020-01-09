@@ -4,7 +4,9 @@ RikerIO::DataMap::DataMap(Memory& memory) : memory(memory) { }
 
 bool RikerIO::DataMap::add(const std::string id, std::shared_ptr<Data> data) {
 
-    MemoryAreaPtr memArea = memory.getAreaFromRange(data->getOffset(), data->getByteSize());
+    MemoryAreaPtr memArea = memory.getAreaFromRange(
+                                data->get_offset().get_byte_offset(),
+                                data->get_type().get_byte_size());
 
     // no memory area for this data point found
     if (!memArea) {
@@ -32,9 +34,10 @@ bool RikerIO::DataMap::add(const std::string id, const std::string token, std::s
         return false;
     }
 
-    MemoryAreaPtr realMemArea = memory.getAreaFromRange(
-                                    data->getOffset() + memArea->getOffset(),
-                                    data->getSize());
+    MemoryAreaPtr realMemArea =
+        memory.getAreaFromRange(
+            data->get_offset().get_byte_offset(),
+            data->get_type().get_byte_size());
 
     if (memArea != realMemArea) {
         return false;

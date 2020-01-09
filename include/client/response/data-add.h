@@ -3,6 +3,8 @@
 
 #include "client/response.h"
 #include "common/utils.h"
+#include "common/type.h"
+#include "common/mem-position.h"
 
 namespace RikerIO {
 namespace Response {
@@ -13,20 +15,16 @@ class DataAdd : public RikerIO::RPCResponse {
     DataAdd(Json::Value& result, uint8_t* memory_ptr);
 
     const std::string& get_id() const;
-    unsigned int get_offset() const;
-    unsigned int get_index() const;
-    unsigned int get_size() const;
-    RikerIO::Utils::Datatype get_type() const;
+    MemoryPosition& get_offset();
+    const Type& get_type() const;
 
     uint8_t* get_data_ptr() const;
 
   private:
 
     std::string id;
-    unsigned int offset;
-    unsigned int index;
-    unsigned int size;
-    RikerIO::Utils::Datatype type;
+    MemoryPosition offset;
+    Type type;
 
     uint8_t* data_ptr = NULL;
 };

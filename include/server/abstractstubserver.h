@@ -2,11 +2,12 @@
 #ifndef JSONRPC_CPP_STUB_ABSTRACTSTUBSERVER_H_
 #define JSONRPC_CPP_STUB_ABSTRACTSTUBSERVER_H_
 
-#include <jsonrpccpp/server.h>
-#include <algorithm>
-
 #include "spdlog/spdlog.h"
+#include "jsonrpccpp/server.h"
+#include "algorithm"
 #include "common/error.h"
+#include "common/type.h"
+#include "common/mem-position.h"
 #include "server/data.h"
 #include "server/memory.h"
 
@@ -50,8 +51,7 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
         this->bindAndAddMethod(
             jsonrpc::Procedure("v1/dataCreate", jsonrpc::PARAMS_BY_NAME,
                                jsonrpc::JSON_OBJECT,
-                               "data", jsonrpc::JSON_OBJECT,
-                               "id", jsonrpc::JSON_STRING, NULL),
+                               "data", jsonrpc::JSON_OBJECT, NULL),
             &AbstractStubServer::data_addI);
 
         this->bindAndAddMethod(
@@ -218,53 +218,44 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
 
     inline virtual void data_addI(const Json::Value &request, Json::Value &response) {
 
-        spdlog::debug("Request : {}", request.toStyledString());
+        spdlog::debug("v1/dataAdd Request : {}", request.toStyledString());
 
-        std::string token = (request["token"] && request["token"].isString()) ?
-                            request["token"].asString() : "";
-
-        std::string dId = request["id"].asString();
         Json::Value data = request["data"];
 
+        bool hasId = data["id"] && data["id"].isString();
+        bool hasToken = data["token"] && data["token"].isString();
         bool hasType = data["type"] && data["type"].isString();
-        bool hasOffset = data["offset"] && data["offset"].isUInt();
-        bool hasIndex = data["index"] && data["index"].isUInt() && data["index"].asUInt() != 0;
-        bool hasSize = data["size"] && data["size"].isUInt();
+        bool hasOffset = data["offset"] && data["offset"].isString();
 
-        DataCreateRequest req = { RikerIO::Utils::UNDEFINED, 0, 0, 0 };
+        if (!hasType || !hasOffset || !hasId) {
+            response["code"] = RikerIO::Error::BAD_REQUEST;
+            response["message"] = "Missing or incorrect id/type/offset.";
+            spdlog::debug("Response {}", response.toStyledString());
 
-        if (hasType && !hasSize && hasOffset) {
-            req.type = RikerIO::Utils::GetTypeFromString(data["type"].asString());
-            req.size = RikerIO::Utils::DatatypeSize[req.type];
-            req.offset = data["offset"].asUInt();
-        } else if (!hasType && hasSize && hasOffset) {
-            req.type = RikerIO::Utils::UNDEFINED;
-            req.size = data["size"].asUInt();
-            req.offset = data["offset"].asUInt();
-        }
-
-        if (hasIndex) {
-            req.index = data["index"].asUInt();
-
-            if (req.size > (7 - req.index) || req.index > 7) {
-                response["code"] = RikerIO::BAD_REQUEST;
-                response["message"] = "Index violates byte constraints.";
-                return;
-            }
-
+            return;
         }
 
         try {
 
-            data_create(token, dId, req);
+            std::string id = data["id"].asString();
+            std::string token = hasToken ? data["token"].asString() : "";
+            RikerIO::Type type(data["type"].asString());
+            RikerIO::MemoryPosition offset(data["offset"].asString());
+
+            DataAddRequest req = { token, type, offset };
+            DataAddResponse res = { RikerIO::Type("1bit"), RikerIO::MemoryPosition(0), 0 };
+
+            data_add(id, req, res);
             response["code"] = RikerIO::NO_ERROR;
             response["data"] = Json::objectValue;
-            response["data"]["id"] = dId;
-            response["data"]["type"] = RikerIO::Utils::GetStringFromType(req.type);
-            response["data"]["size"] = req.size;
-            response["data"]["offset"] = req.offset;
-            response["data"]["index"] = req.index;
+            response["data"]["id"] = id;
+            response["data"]["type"] = res.type.to_string();
+            response["data"]["offset"] = res.offset.to_string();
+            response["data"]["semaphore"] = res.semaphore;
 
+        } catch (RikerIO::Type::TypeError& e) {
+            response["code"] = RikerIO::Error::BAD_REQUEST;
+            response["message"] = e.getMessage();
         } catch (ServerError& e) {
             response["code"] = e.getCode();
             response["message"] = e.getMsg();
@@ -317,11 +308,9 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
 
             for (auto d : res.list) {
 
-                item["id"] = d.dId;
-                item["offset"] = d.offset;
-                item["index"] = d.index;
-                item["size"] = d.size;
-                item["type"] = d.type;
+                item["id"] = d.id;
+                item["offset"] = d.offset.to_string();
+                item["type"] = d.type.to_string();
                 item["semaphore"] = d.semaphore;
                 item["private"] = d.isPrivate;
 
@@ -446,10 +435,8 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
 
             if (i.has_data) {
 
-                data["offset"] = i.data_item.offset;
-                data["index"] = i.data_item.index;
-                data["size"] = i.data_item.size;
-                data["type"] = i.data_item.type;
+                data["offset"] = i.data_item.offset.to_string();
+                data["type"] = i.data_item.type.to_string();
                 data["semaphore"] = i.data_item.semaphore;
                 data["private"] = i.data_item.isPrivate;
                 item["data"] = data;
@@ -457,7 +444,7 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
             }
 
             item["key"] = i.key;
-            item["id"] = i.data_item.dId;
+            item["id"] = i.data_item.id;
 
             response["data"].append(item);
 
@@ -505,11 +492,16 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
         RikerIO::MemoryAreaPtr data;
     };
 
-    struct DataCreateRequest {
-        RikerIO::Utils::Datatype type;
-        unsigned int size;
-        unsigned int index;
-        unsigned int offset;
+    struct DataAddRequest {
+        std::string token;
+        RikerIO::Type type;
+        RikerIO::MemoryPosition offset;
+    };
+
+    struct DataAddResponse {
+        RikerIO::Type type;
+        RikerIO::MemoryPosition offset;
+        int semaphore;
     };
 
     struct DataRemoveResponse {
@@ -517,12 +509,10 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
     };
 
     struct DataListResponseItem {
-        std::string dId;
-        unsigned int offset;
-        unsigned int index;
-        unsigned int size;
-        std::string type;
-        unsigned int semaphore;
+        std::string id;
+        RikerIO::MemoryPosition offset;
+        const RikerIO::Type type;
+        int semaphore;
         bool isPrivate;
     };
 
@@ -547,10 +537,10 @@ class AbstractStubServer : public jsonrpc::AbstractServer<AbstractStubServer> {
     virtual void memory_list(MemoryListResponse&) = 0;
     virtual void memory_get(int mId, MemoryGetResponse&) = 0;
 
-    virtual void data_create(
-        const std::string& token,
-        const std::string& dId,
-        const DataCreateRequest&) = 0;
+    virtual void data_add(
+        const std::string& id,
+        DataAddRequest&,
+        DataAddResponse&) = 0;
 
     virtual void data_remove(
         const std::string& pattern,

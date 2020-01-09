@@ -33,16 +33,16 @@ echo "Control output"
 $RIO memory ls
 
 # 5. Create data points on memory area for token C
-$RIO data add --datatype=int8 --offset=10 --token=$TOKEN_C test.data.a
-$RIO data add --datatype=int16 --offset=11 --token=$TOKEN_C test.data.b
-$RIO data add --datatype=int32 --offset=13 --token=$TOKEN_C test.data.c
-$RIO data add --datatype=64bit --offset=17 --token=$TOKEN_C test.data.d
+$RIO data add --type=int8 --offset=10 --token=$TOKEN_C test.data.a
+$RIO data add --type=int16 --offset=11 --token=$TOKEN_C test.data.b
+$RIO data add --type=int32 --offset=13 --token=$TOKEN_C test.data.c
+$RIO data add --type=64bit --offset=17 --token=$TOKEN_C test.data.d
 
 # 6. Create anonym data points on memory area for token A
-$RIO data add --datatype=int8 --offset=10 test.data.e
-$RIO data add --datatype=int16 --offset=11 test.data.f
-$RIO data add --datatype=int32 --offset=13 test.data.g
-$RIO data add --datatype=64bit --offset=17 test.data.h
+$RIO data add --type=int8 --offset=10 test.data.e
+$RIO data add --type=int16 --offset=11 test.data.f
+$RIO data add --type=int32 --offset=13 test.data.g
+$RIO data add --type=64bit --offset=17 test.data.h
 
 # 7. Control output
 echo "Control output"

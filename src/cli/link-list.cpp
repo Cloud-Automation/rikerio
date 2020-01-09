@@ -9,11 +9,7 @@ bool cmd_link_list_comp_offset(
         return false;
     }
 
-    if (a->get_data()->get_offset() == b->get_data()->get_offset()) {
-        return a->get_data()->get_index() < b->get_data()->get_index();
-    }
-
-    return a->get_data()->get_offset() < b->get_data()->get_offset();
+    return a < b;
 
 }
 
@@ -72,7 +68,7 @@ std::shared_ptr<RikerIO::RPCResponse> cmd_link_list(
             idHeader += " ";
         }
 
-        printf("%sOFFSET  SIZE    SEMAPHORE FLAGS TYPE       KEY\n", idHeader.c_str());
+        printf("%sOFFSET  TYPE    SEMAPHORE FLAGS KEY\n", idHeader.c_str());
 
         for (auto a : items) {
 
@@ -94,17 +90,16 @@ std::shared_ptr<RikerIO::RPCResponse> cmd_link_list(
                 continue;
             }
 
-            std::string sOffset = std::to_string(a->get_data()->get_offset()) + "." + std::to_string(a->get_data()->get_index());
+            std::string sOffset = a->get_data()->get_offset().to_string();
             std::string flags = "";
             flags += a->get_data()->is_private() ? "P" : "-";
 
-            printf("%s%-8s%-8d%-10d%-6s%-11s%s\n",
+            printf("%s%-8s%-11s%-10d%-6s%s\n",
                    altId.c_str(),
                    sOffset.c_str(),
-                   a->get_data()->get_size(),
-                   a->get_data()->get_semaphore(),
+                   a->get_data()->get_type().to_string().c_str(),
+                   a->get_data()->get_semaphore()->get_id(),
                    flags.c_str(),
-                   RikerIO::Utils::GetStringFromType(a->get_data()->get_datatype()).c_str(),
                    a->get_key().c_str());
         }
 

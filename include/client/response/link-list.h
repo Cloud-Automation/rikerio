@@ -1,6 +1,8 @@
 #ifndef __RIKERIO_LINK_LIST_RESPONSE_H__
 #define __RIKERIO_LINK_LIST_RESPONSE_H__
 
+#include "common/type.h"
+#include "common/mem-position.h"
 #include "client/response.h"
 #include "client/response/data-list.h"
 

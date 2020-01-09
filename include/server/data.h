@@ -7,91 +7,49 @@
 #include <string>
 #include <exception>
 
-#include "common/utils.h"
+#include "common/type.h"
+#include "common/mem-position.h"
 #include "server/memory-area.h"
 
 
 namespace RikerIO  {
 
-class InvalidDataError : public std::exception {
-
-};
-
 class Data {
   public:
 
-    class OutOfScopeError : public std::exception {};
-
     static bool isValidId(const std::string&);
 
-    Data(
-        const std::string& type,
-        unsigned int offset) :
-        Data(Utils::GetTypeFromString(type), offset) { }
+    Data(Type type, MemoryPosition offset) :
+        type(type), offset(offset) { }
 
-    Data(Utils::Datatype type, unsigned int offset) :
-        Data(type, offset, Utils::DatatypeSize[type]) { }
-
-    Data(Utils::Datatype type, unsigned int offset, unsigned int size) :
-        Data(type, offset, 0, size) { }
-
-    Data(Utils::Datatype type, unsigned int offset, unsigned int index, unsigned int size) :
-        type(type), offset(offset), index(index), size(size) {
-
-        if (index > 0 && size > (index - 8)) {
-            throw InvalidDataError();
-        }
-
+    bool operator==(Data& a) const {
+        return type == a.get_type() && offset == a.get_offset();
     }
 
-    bool operator==(const Data& a) const {
-        return type == a.getType() &&
-               offset == a.getOffset() &&
-               index == a.getIndex() &&
-               size == a.getSize();
-    }
-
-    Utils::Datatype getType() const {
+    const Type& get_type() const {
         return type;
     }
-    unsigned int getOffset() const {
+
+    MemoryPosition& get_offset() {
         return offset;
     }
 
-    void addOffset(unsigned int value) {
-        offset += value;
-    }
-
-    unsigned int getIndex() const {
-        return index;
-    }
-    unsigned int getSize() const {
-        return size;
-    }
-    unsigned int getByteSize() const {
-        unsigned int rest = size % 8;
-        unsigned int res = (size - rest) / 8;
-        return rest > 0 ? res + 1 : res;
-    }
     unsigned int getEnd() const {
-        return offset + getByteSize();
+        return offset.get_byte_offset() + type.get_byte_size();
     }
 
     bool inRange(unsigned int offs, unsigned int sz) const {
 
         unsigned int e = offs + sz;
 
-        return (offset >= offs && getEnd() <= e);
+        return (offset.get_byte_offset() >= offs && getEnd() <= e);
 
     }
 
   private:
 
-    Utils::Datatype type;
-    unsigned int offset;
-    const unsigned int index;
-    const unsigned int size;
-
+    Type type;
+    MemoryPosition offset;
 
 };
 

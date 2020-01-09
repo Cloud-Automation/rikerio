@@ -17,13 +17,7 @@ struct ReadItem {
         id(id),
         item(item) {
 
-        int new_size = item->get_size() / 8;
-
-        if ((item->get_size() % 8) > 0) {
-            new_size += 1;
-        }
-
-        copy_mem = (uint8_t*) calloc(1, new_size);
+        copy_mem = (uint8_t*) calloc(1, item->get_type().get_byte_size());
 
     }
 
@@ -132,71 +126,73 @@ int cmd_read(std::vector<std::string>& patterns, RikerIO::Client& client) {
 
     for (auto read_item : items) {
 
-        std::cout << read_item->key << " " << read_item->id;
+        std::cout << (read_item->key.length() == 0 ? "-" : read_item->key) << " " << read_item->id << " ";
 
-        if (read_item->item->get_datatype() == RikerIO::Utils::Datatype::BIT) {
+        RikerIO::Type::Types type = read_item->item->get_type().get_type();
+
+        if (type == RikerIO::Type::Types::BIT) {
 
             uint8_t* value = read_item->copy_mem;
 
             std::bitset<8> bs(*value);
 
-            std::cout << bs[read_item->item->get_index()] << std::endl;
+            std::cout << bs[read_item->item->get_offset().get_bit_index()] << std::endl;
 
-        } else if (read_item->item->get_datatype() == RikerIO::Utils::Datatype::UINT8) {
+        } else if (type == RikerIO::Type::Types::UINT8) {
 
             uint8_t* value = read_item->copy_mem;
 
             std::cout << *value << std::endl;
 
-        } else if (read_item->item->get_datatype() == RikerIO::Utils::Datatype::INT8) {
+        } else if (type == RikerIO::Type::Types::INT8) {
 
             int8_t* value = (int8_t*) read_item->copy_mem;
 
             std::cout << *value << std::endl;
 
-        } else if (read_item->item->get_datatype() == RikerIO::Utils::Datatype::UINT16) {
+        } else if (type == RikerIO::Type::Types::UINT16) {
 
             uint16_t* value = (uint16_t*) read_item->copy_mem;
 
             std::cout << *value << std::endl;
 
-        } else if (read_item->item->get_datatype() == RikerIO::Utils::Datatype::INT16) {
+        } else if (type == RikerIO::Type::Types::INT16) {
 
             int16_t* value = (int16_t*) read_item->copy_mem;
 
             std::cout << *value << std::endl;
 
-        } else if (read_item->item->get_datatype() == RikerIO::Utils::Datatype::INT32) {
+        } else if (type == RikerIO::Type::Types::INT32) {
 
             uint32_t* value = (uint32_t*) read_item->copy_mem;
 
             std::cout << *value << std::endl;
 
-        } else if (read_item->item->get_datatype() == RikerIO::Utils::Datatype::UINT32) {
+        } else if (type == RikerIO::Type::Types::UINT32) {
 
             int32_t* value = (int32_t*) read_item->copy_mem;
 
             std::cout << *value << std::endl;
 
-        } else if (read_item->item->get_datatype() == RikerIO::Utils::Datatype::INT64) {
+        } else if (type == RikerIO::Type::Types::INT64) {
 
             uint64_t* value = (uint64_t*) read_item->copy_mem;
 
             std::cout << *value << std::endl;
 
-        } else if (read_item->item->get_datatype() == RikerIO::Utils::Datatype::UINT64) {
+        } else if (type == RikerIO::Type::Types::UINT64) {
 
             int64_t* value = (int64_t*) read_item->copy_mem;
 
             std::cout << *value << std::endl;
 
-        } else if (read_item->item->get_datatype() == RikerIO::Utils::Datatype::FLOAT) {
+        } else if (type == RikerIO::Type::Types::FLOAT) {
 
             float* value = (float*) read_item->copy_mem;
 
             std::cout << *value << std::endl;
 
-        } else if (read_item->item->get_datatype() == RikerIO::Utils::Datatype::DOUBLE) {
+        } else if (type == RikerIO::Type::Types::DOUBLE) {
 
             double* value = (double*) read_item->copy_mem;
 
@@ -208,7 +204,7 @@ int cmd_read(std::vector<std::string>& patterns, RikerIO::Client& client) {
 
             std::bitset<8> bs(*value);
 
-            for (unsigned int i = read_item->item->get_index(); i < read_item->item->get_size(); i += 1) {
+            for (unsigned int i = read_item->item->get_offset().get_bit_index(); i < read_item->item->get_type().get_bit_size(); i += 1) {
                 std::cout << bs[i];
             }
 
