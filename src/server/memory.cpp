@@ -77,14 +77,14 @@ Memory::~Memory() {
 
 }
 
-void Memory::debugPrint() {
+void Memory::debug_print() {
 
     for (auto f : freeMap) {
         printf("free %d (%d)\n", f.first, f.second);
     }
 
     for (auto f : allocMap) {
-        printf("alloc %d (%d)\n", f.first, f.second->getSize());
+        printf("alloc %d (%d)\n", f.first, f.second->get_size());
     }
 
 
@@ -135,11 +135,11 @@ std::shared_ptr<MemoryArea> Memory::dealloc(unsigned int offset) {
 
     // erase allocation
     allocMap.erase(offset);
-    tokenMap.erase(result->getToken());
+    tokenMap.erase(result->get_token());
     erase(result);
 
     // we put the new, free memory area in the freeMap
-    freeMap[offset] = result->getSize();
+    freeMap[offset] = result->get_size();
 
     // making optimizations to the free memory map
     // merging appending free memory areas
@@ -191,13 +191,13 @@ std::shared_ptr<MemoryArea> Memory::dealloc(unsigned int offset) {
 
 }
 
-unsigned int Memory::getSize() const {
+unsigned int Memory::get_size() const {
 
     return size;
 
 }
 
-std::shared_ptr<MemoryArea> Memory::getAreaFromRange(unsigned int offset, unsigned int size) {
+std::shared_ptr<MemoryArea> Memory::get_area_from_range(unsigned int offset, unsigned int size) {
 
     std::shared_ptr<MemoryArea> result = nullptr;
 
@@ -205,7 +205,7 @@ std::shared_ptr<MemoryArea> Memory::getAreaFromRange(unsigned int offset, unsign
 
     for (auto m : allocMap) {
 
-        if (offset >= m.second->getOffset() && end <= m.second->getEnd()) {
+        if (offset >= m.second->get_offset() && end <= m.second->get_end()) {
             result = m.second;
         }
     }
@@ -214,7 +214,7 @@ std::shared_ptr<MemoryArea> Memory::getAreaFromRange(unsigned int offset, unsign
 
 }
 
-std::shared_ptr<MemoryArea> Memory::getAreaFromToken(const std::string& tkn) {
+std::shared_ptr<MemoryArea> Memory::get_area_from_token(const std::string& tkn) {
 
     if (tokenMap.find(tkn) == tokenMap.end()) {
         return nullptr;

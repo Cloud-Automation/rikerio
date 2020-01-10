@@ -38,7 +38,7 @@ TEST(Request, MemoryDealloc) {
 
 TEST(Request, DataAdd) {
 
-    std::string exRequestStr = "{\"id\":\"data-id-a\",\"data\":{\"token\":\"token-a\",\"type\":\"int8\",\"offset\":\"10.1\"}}";
+    std::string exRequestStr = "{\"data\":{\"id\":\"data-id-a\",\"token\":\"token-a\",\"type\":\"int8\",\"offset\":\"10.1\"}}";
     Json::Value exRequestJson;
 
     JsonParse(exRequestStr, exRequestJson);

@@ -22,7 +22,7 @@ class MemoryArea {
         semctl(semaphore, -1, IPC_RMID);
     }
 
-    const std::string& getToken() {
+    const std::string& get_token() {
         return token;
     }
 
@@ -30,19 +30,19 @@ class MemoryArea {
         return lhs.offset < rhs.offset;
     }
 
-    unsigned int getOffset() const {
+    unsigned int get_offset() const {
         return offset;
     }
 
-    unsigned int getSize() const {
+    unsigned int get_size() const {
         return size;
     }
 
-    int getSemaphore() const {
+    int get_semaphore() const {
         return semaphore;
     }
 
-    unsigned int getEnd() const {
+    unsigned int get_end() const {
         return offset + size;
     }
 

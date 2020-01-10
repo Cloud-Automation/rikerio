@@ -13,11 +13,9 @@ std::mutex Server::alloc_mutex;
 std::mutex Server::persistent_mutex;
 
 Server::Server(
-    jsonrpc::UnixDomainSocketServer& server,
     const std::string& id,
     unsigned int size,
     unsigned int cycle) :
-    AbstractStubServer(server),
     id(id),
     size(size),
     cycle(cycle),
@@ -41,31 +39,31 @@ Server::~Server() {
 
 }
 
-void Server::get_config(ConfigResponse& response) {
+void Server::config_get(RikerIO::ConfigResponse& response) {
 
     response.profile = id;
     response.version = std::string(RIO_VERSION_STRING);
-    response.shmFile = std::string(FOLDER) + "/" + id + "/" + SHM_FILENAME;
+    response.shmFile = RikerIO::Config::CreateShmPath(id);
     response.size = size;
     response.defaultCycle = cycle;
 
 }
 
-void Server::memory_alloc(int size, MemoryAllocResponse& response) {
+void Server::memory_alloc(MemoryAllocRequest& request, MemoryAllocResponse& response) {
 
     const std::lock_guard<std::mutex> lock(Server::alloc_mutex);
 
-    if (size <= 0) {
+    if (request.size <= 0) {
         throw ServerError(BAD_REQUEST, "Size musst be > 0.");
     }
 
     try  {
 
-        std::shared_ptr<MemoryArea> ma = memory.alloc(size);
+        std::shared_ptr<MemoryArea> ma = memory.alloc(request.size);
 
-        response.offset = ma->getOffset();
-        response.token = ma->getToken();
-        response.semaphore = ma->getSemaphore();
+        response.offset = ma->get_offset();
+        response.token = ma->get_token();
+        response.semaphore = ma->get_semaphore();
 
     } catch (Token::TokenException& e) {
         throw ServerError(GENTOKEN_ERROR, "Internal Error (1).");
@@ -75,22 +73,22 @@ void Server::memory_alloc(int size, MemoryAllocResponse& response) {
 
 }
 
-void Server::memory_dealloc(const std::string& token) {
+void Server::memory_dealloc(MemoryDeallocRequest& request) {
 
     /* get offset by token */
 
-    if (memory.getAreaFromToken(token) == nullptr) {
+    if (memory.get_area_from_token(request.token) == nullptr) {
         throw ServerError(UNAUTHORIZED_ERROR, "Token not found.");
     }
 
-    std::shared_ptr<MemoryArea> maFromToken = memory.getAreaFromToken(token);
-    std::shared_ptr<MemoryArea> maFromDealloc = memory.dealloc(maFromToken->getOffset());
+    std::shared_ptr<MemoryArea> maFromToken = memory.get_area_from_token(request.token);
+    std::shared_ptr<MemoryArea> maFromDealloc = memory.dealloc(maFromToken->get_offset());
 
     if (maFromDealloc == nullptr) {
         throw ServerError(INTERNAL_ERROR, "Internal Error (1).");
     }
 
-    dataMap.removeByRange(maFromToken->getOffset(), maFromToken->getSize());
+    dataMap.remove_by_range(maFromToken->get_offset(), maFromToken->get_size());
 
 }
 
@@ -102,15 +100,11 @@ void Server::memory_list(MemoryListResponse& response) {
 
 }
 
-void Server::memory_get(int offset, MemoryGetResponse& response) {
-
-    if (offset < 0) {
-        throw ServerError(BAD_REQUEST, "Offset cannot be negative.");
-    }
+void Server::memory_get(MemoryGetRequest& request, MemoryGetResponse& response) {
 
     for (auto ma : memory) {
 
-        if (ma->getOffset() != static_cast<unsigned int>(offset)) {
+        if (ma->get_offset() != static_cast<unsigned int>(request.offset)) {
             continue;
         }
 
@@ -125,18 +119,17 @@ void Server::memory_get(int offset, MemoryGetResponse& response) {
 }
 
 void Server::data_add(
-    const std::string& id,
     DataAddRequest& req,
     DataAddResponse& res) {
 
-    spdlog::debug("data_add({},{},{},{})",id, req.token, req.type.to_string(), req.offset.to_string());
+    spdlog::debug("data_add({},{},{},{})",req.id, req.token, req.type.to_string(), req.offset.to_string());
 
     std::shared_ptr<MemoryArea> memArea = nullptr;
     std::shared_ptr<Data> entry = nullptr;
 
     bool hasToken = req.token.length() > 0;
 
-    if (!Data::isValidId(id)) {
+    if (!Data::isValidId(req.id)) {
         throw ServerError(BAD_REQUEST, "Data ID is not valid.");
     }
 
@@ -144,7 +137,7 @@ void Server::data_add(
 
     if (hasToken) {
 
-        memArea = memory.getAreaFromToken(req.token);
+        memArea = memory.get_area_from_token(req.token);
 
         if (!memArea) {
             throw ServerError(UNAUTHORIZED_ERROR, "Token not found.");
@@ -154,7 +147,7 @@ void Server::data_add(
 
     } else {
 
-        memArea = memory.getAreaFromRange(req.offset.get_byte_offset(), req.type.get_byte_size());
+        memArea = memory.get_area_from_range(req.offset.get_byte_offset(), req.type.get_byte_size());
 
     }
 
@@ -166,87 +159,68 @@ void Server::data_add(
 
     if (hasToken) {
         spdlog::debug("adding offset.");
-        req.offset.add_byte_offset(memArea->getOffset());
+        req.offset.add_byte_offset(memArea->get_offset());
     }
 
     std::shared_ptr<RikerIO::Data> d = std::make_shared<RikerIO::Data>(req.type, req.offset);
 
     bool value = false;
     if (hasToken) {
-        value = dataMap.add(id, req.token, d);
+        value = dataMap.add(req.id, req.token, d);
     } else {
-        value = dataMap.add(id, d);
+        value = dataMap.add(req.id, d);
     }
 
     spdlog::debug("Adding data result {}.", value);
 
     res.type = req.type;
     res.offset = req.offset;
-    res.semaphore = memArea->getSemaphore();
+    res.semaphore = memArea->get_semaphore();
 
 }
 
-void Server::data_remove(const std::string& pattern, const std::string& token, DataRemoveResponse& response) {
-
-    unsigned int count = 0;
+void Server::data_remove(DataRemoveRequest& request, DataRemoveResponse& response) {
 
     for (auto d : dataMap) {
 
-        if (!Server::match(pattern, d.first)) {
+        if (!Server::match(request.pattern, d.first)) {
             continue;
         }
 
         bool removeSuccessfull = false;
 
-        if (token.length() == 0) {
+        if (request.token.length() == 0) {
             removeSuccessfull = dataMap.remove(d.first);
         } else {
-            removeSuccessfull = dataMap.remove(d.first, token);
+            removeSuccessfull = dataMap.remove(d.first, request.token);
         }
 
-        /*        std::string dataToken = "";
+        response.count += removeSuccessfull ? 1 : 0;
 
-                if (dataTokenMap.find(d.first) != dataTokenMap.end()) {
-                    dataToken = dataTokenMap[d.first];
-                }
-
-                if (dataToken != "" && dataToken != token) {
-                    continue;
-                }
-        */
-        count += removeSuccessfull ? 1 : 0;
-
-        /*        dataMap.erase(d.first);
-                dataTokenMap.erase(d.first);
-                dataMemoryMap.erase(d.first);
-        */
     }
-
-    response.count = count;
 
 }
 
 
-void Server::data_list(const std::string& pattern, DataListResponse& response) {
+void Server::data_list(DataListRequest& request, DataListResponse& response) {
 
     for (auto d : dataMap) {
 
-        if (!Server::match(pattern, d.first)) {
+        if (!Server::match(request.pattern, d.first)) {
             continue;
         }
 
 
         std::shared_ptr<RikerIO::Data> data = d.second;
 
-        bool isPrivate = dataMap.isPrivate(d.first);
+        bool is_private = dataMap.is_private(d.first);
 
-        DataListResponseItem item = {
-            d.first,
-            data->get_offset(),
-            data->get_type(),
-            dataMap.getSemaphore(d.first),
-            isPrivate
-        };
+        DataListResponseItem item;
+        item.id = d.first,
+        item.offset = data->get_offset(),
+        item.type = data->get_type(),
+        item.semaphore = dataMap.get_semaphore(d.first),
+        item.is_private = is_private;
 
         response.list.push_back(item);
 
@@ -255,77 +229,61 @@ void Server::data_list(const std::string& pattern, DataListResponse& response) {
 }
 
 
-Json::Value Server::data_get(const std::string& dId) {
-
-    (void)(dId);
-
-    Json::Value result;
-    result["code"] = 0;
-
-    return result;
-
-}
-
-
-void Server::link_add(const std::string& linkname, std::vector<std::string>& data_ids, unsigned int& counter) {
+void Server::link_add(LinkAddRequest& request, LinkAddResponse& response) {
 
     const std::lock_guard<std::mutex> lock(persistent_mutex);
 
-    counter = 0;
-
-    for (std::string s : data_ids) {
-        if (linkMap.add(linkname, s)) {
-            counter += 1;
+    for (std::string s : request.ids) {
+        if (linkMap.add(request.key, s)) {
+            response.counter += 1;
         }
     }
 
     /* start persistent thread */
 
-    persistentChangeCount += counter;
+    persistentChangeCount += response.counter;
 
 }
 
-void Server::link_remove(const std::string& pattern, std::vector<std::string>& data_ids, unsigned int& counter) {
+void Server::link_remove(LinkRemoveRequest& request, LinkRemoveResponse& response) {
 
     const std::lock_guard<std::mutex> lock(persistent_mutex);
-
-    counter = 0;
 
     std::set<std::string> keys = linkMap.keys();
 
     for (auto key : keys) {
 
-        if (!Server::match(pattern, key)) {
+        if (!Server::match(request.pattern, key)) {
 
             continue;
 
         }
 
-        if (data_ids.size() == 0) {
+        if (request.ids.size() == 0) {
 
-            counter += linkMap.remove(key);
+            response.counter += linkMap.remove(key);
 
         } else {
 
-            for (auto data : data_ids) {
-                counter += linkMap.remove(key, data) ? 1 : 0;
+            for (auto data : request.ids) {
+                response.counter += linkMap.remove(key, data) ? 1 : 0;
             }
 
         }
     }
 
-    persistentChangeCount += counter;
+    persistentChangeCount += response.counter;
 
 }
 
 
-void Server::link_list(const std::string& pattern, AbstractStubServer::LinkListResponse& response) {
+void Server::link_list(LinkListRequest& request, LinkListResponse& response) {
 
     const std::lock_guard<std::mutex> lock(persistent_mutex);
 
     linkMap.iterate([&](const std::string& key, const std::string& data_id) {
 
-        if (!Server::match(pattern, key)) {
+        if (!Server::match(request.pattern, key)) {
             return;
         }
 
@@ -337,22 +295,21 @@ void Server::link_list(const std::string& pattern, AbstractStubServer::LinkListR
 
             std::shared_ptr<RikerIO::Data> data = d->second;
 
-            bool isPrivate = dataMap.isPrivate(d->first);
+            bool is_private = dataMap.is_private(d->first);
 
-            DataListResponseItem data_item = {
-                d->first,
-                data->get_offset(),
-                data->get_type(),
-                dataMap.getSemaphore(d->first),
-                isPrivate
-            };
+            DataListResponseItem item;
+            item.id = d->first;
+            item.offset = data->get_offset();
+            item.type = data->get_type();
+            item.semaphore = dataMap.get_semaphore(d->first);
+            item.is_private = is_private;
 
-            LinkListItem linkItem =  { key, true, data_item };
+            LinkListItem linkItem(key, d->first, &item);
             response.list.push_back(linkItem);
 
         } else {
 
-            LinkListItem linkItem = { key, false, { data_id, MemoryPosition(), Type(), -1, false } };
+            LinkListItem linkItem(key, d->first);
 
             linkItem.has_data = false;
             linkItem.data_item.id = data_id;
@@ -367,18 +324,6 @@ void Server::link_list(const std::string& pattern, AbstractStubServer::LinkListR
 
 }
 
-
-Json::Value Server::link_get(const std::string& id) {
-
-    (void)(id);
-
-    Json::Value result;
-    result["code"] = 0;
-
-    return result;
-
-
-}
 
 bool Server::match(const std::string& pattern, const std::string& target) {
 

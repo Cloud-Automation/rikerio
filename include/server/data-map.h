@@ -53,7 +53,7 @@ class DataMap : public std::map<const std::string, std::shared_ptr<Data>> {
      * @param token
      * @returns number of removed data points
      */
-    unsigned int removeByToken(const std::string&);
+    unsigned int remove_by_token(const std::string&);
 
     /**
      * @brief Remove multiple data points located inside the
@@ -62,7 +62,7 @@ class DataMap : public std::map<const std::string, std::shared_ptr<Data>> {
      * @param size
      * @returns number of removed data points
      */
-    unsigned int removeByRange(unsigned int, unsigned int);
+    unsigned int remove_by_range(unsigned int, unsigned int);
 
     /**
      * @brief If there exist a token for that datapoint than
@@ -70,14 +70,14 @@ class DataMap : public std::map<const std::string, std::shared_ptr<Data>> {
      * @param id
      * @returns true if a token exists for that id
      */
-    bool isPrivate(const std::string&);
+    bool is_private(const std::string&);
 
     /**
      * @brief Returns the associated semaphore or -1
      * @param id
      * @returns semaphore id
      */
-    int getSemaphore(const std::string&);
+    int get_semaphore(const std::string&);
 
   private:
 

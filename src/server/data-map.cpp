@@ -4,7 +4,7 @@ RikerIO::DataMap::DataMap(Memory& memory) : memory(memory) { }
 
 bool RikerIO::DataMap::add(const std::string id, std::shared_ptr<Data> data) {
 
-    MemoryAreaPtr memArea = memory.getAreaFromRange(
+    MemoryAreaPtr memArea = memory.get_area_from_range(
                                 data->get_offset().get_byte_offset(),
                                 data->get_type().get_byte_size());
 
@@ -27,7 +27,7 @@ bool RikerIO::DataMap::add(const std::string id, std::shared_ptr<Data> data) {
 
 bool RikerIO::DataMap::add(const std::string id, const std::string token, std::shared_ptr<Data> data) {
 
-    MemoryAreaPtr memArea = memory.getAreaFromToken(token);
+    MemoryAreaPtr memArea = memory.get_area_from_token(token);
 
     // no memory area for this token
     if (!memArea) {
@@ -35,7 +35,7 @@ bool RikerIO::DataMap::add(const std::string id, const std::string token, std::s
     }
 
     MemoryAreaPtr realMemArea =
-        memory.getAreaFromRange(
+        memory.get_area_from_range(
             data->get_offset().get_byte_offset(),
             data->get_type().get_byte_size());
 
@@ -43,7 +43,7 @@ bool RikerIO::DataMap::add(const std::string id, const std::string token, std::s
         return false;
     }
 
-    if (memArea->getToken() != token) {
+    if (memArea->get_token() != token) {
         return false;
     }
 
@@ -101,7 +101,7 @@ bool RikerIO::DataMap::remove(const std::string& id, const std::string& token) {
 
 }
 
-unsigned int RikerIO::DataMap::removeByToken(const std::string& token) {
+unsigned int RikerIO::DataMap::remove_by_token(const std::string& token) {
 
     std::set<std::string> removeList;
 
@@ -125,7 +125,7 @@ unsigned int RikerIO::DataMap::removeByToken(const std::string& token) {
 
 }
 
-unsigned int RikerIO::DataMap::removeByRange(unsigned int offset, unsigned int size) {
+unsigned int RikerIO::DataMap::remove_by_range(unsigned int offset, unsigned int size) {
 
     std::set<std::string> removeList;
 
@@ -149,18 +149,18 @@ unsigned int RikerIO::DataMap::removeByRange(unsigned int offset, unsigned int s
 
 }
 
-bool RikerIO::DataMap::isPrivate(const std::string& id) {
+bool RikerIO::DataMap::is_private(const std::string& id) {
 
     return dataTokenMap.find(id) != dataTokenMap.end();
 
 }
 
-int RikerIO::DataMap::getSemaphore(const std::string& id) {
+int RikerIO::DataMap::get_semaphore(const std::string& id) {
 
     if (dataMemoryMap.find(id) == dataMemoryMap.end()) {
         return -1;
     }
 
-    return dataMemoryMap[id]->getSemaphore();
+    return dataMemoryMap[id]->get_semaphore();
 
 }

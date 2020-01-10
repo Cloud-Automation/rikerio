@@ -22,7 +22,7 @@ ExternalProject_Add(${GTEST_PREFIX}
     LOG_BUILD 1
     UPDATE_DISCONNECTED 1
     STEP_TARGETS build
-    EXCLUDE_FROM_ALL)
+    EXCLUDE_FROM_ALL TRUE)
 
 message(STATUS "${GTEST_PREFIX} ... Library directory ${GTEST_LIB_DIR}")
 message(STATUS "${GTEST_PREFIX} ... Include directory ${GTEST_INC_DIR}")

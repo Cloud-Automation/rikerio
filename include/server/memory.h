@@ -27,7 +27,18 @@ class Memory : public std::set<std::shared_ptr<MemoryArea>> {
     Memory(unsigned int, std::string);
     ~Memory();
 
+    /**
+     * @brief allocate memory
+     * @params unsigned int size
+     * @returns memory area
+     */
     std::shared_ptr<MemoryArea> alloc(unsigned int);
+
+    /**
+     * @brief deallocate memory
+     * @params unsigned int offset
+     * @returns deallocated memory area object
+     */
     std::shared_ptr<MemoryArea> dealloc(unsigned int);
 
     /**
@@ -36,12 +47,28 @@ class Memory : public std::set<std::shared_ptr<MemoryArea>> {
      * @returns allocated offset
      * @throws UnallocatedAreaException
      */
-    unsigned int getAllocOffset(unsigned int);
+    unsigned int get_allocation_by_offset(unsigned int);
 
-    unsigned int getSize() const;
+    /**
+     * @brief return byte size
+     * @returns byte size
+     */
+    unsigned int get_size() const;
 
-    std::shared_ptr<MemoryArea> getAreaFromRange(unsigned int, unsigned int);
-    std::shared_ptr<MemoryArea> getAreaFromToken(const std::string&);
+    /**
+     * @brief return memory area from range information
+     * @params byte_offset
+     * @params bit_size
+     * @returns memory area object or nullptr
+     */
+    std::shared_ptr<MemoryArea> get_area_from_range(unsigned int, unsigned int);
+
+    /**
+     * @brief get memory area from a token
+     * @params token
+     * @returns memory area object or nullptr
+     */
+    std::shared_ptr<MemoryArea> get_area_from_token(const std::string&);
 
   private:
 
@@ -56,7 +83,7 @@ class Memory : public std::set<std::shared_ptr<MemoryArea>> {
     std::map<unsigned int, unsigned int> freeMap;
     std::map<const std::string, std::shared_ptr<MemoryArea>> tokenMap;
 
-    void debugPrint();
+    void debug_print();
 
 };
 

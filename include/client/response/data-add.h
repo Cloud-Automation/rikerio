@@ -2,7 +2,6 @@
 #define __RIKERIO_DATA_ADD_RESPONSE_H__
 
 #include "client/response.h"
-#include "common/utils.h"
 #include "common/type.h"
 #include "common/mem-position.h"
 

@@ -1,15 +1,15 @@
-#include "server/server.h"
 
 #include "common/CLI11.h"
 #include "common/config.h"
+#include "server/server-json.h"
+#include "server/server.h"
+#include "jsonrpccpp/server/connectors/unixdomainsocketserver.h"
 
 #include <string>
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <errno.h>
 #include <grp.h>
-#include <getopt.h>
 #include <stdio.h>
 #include <errno.h>
 #include <version.h>
@@ -158,10 +158,10 @@ int main(int argc, char** argv) {
         std::string socketFile = RikerIO::Config::CreateSocketPath(profile);
 
         jsonrpc::UnixDomainSocketServer socket(socketFile, 1);
+        RikerIO::Server server(profile, size, cycle);
+        JsonServer jsonServer(socket, server);
 
-        RikerIO::Server server(socket, profile, size, cycle);
-
-        if (server.StartListening()) {
+        if (jsonServer.StartListening()) {
 
             if (applyGroupAndRights(socketFile, dirMode) != 1) {
                 spdlog::error("Error applying rights to socket file {}.", strerror(errno));
@@ -177,7 +177,7 @@ int main(int argc, char** argv) {
                 sleep(1);
             }
 
-            server.StopListening();
+            jsonServer.StopListening();
 
         } else {
 

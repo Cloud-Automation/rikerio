@@ -1,4 +1,5 @@
 set(SERVER_SRC_FILES 
+    ${SRC}/server/server-json.cpp
     ${SRC}/server/server.cpp
     ${SRC}/server/memory.cpp
     ${SRC}/server/data.cpp
@@ -18,6 +19,7 @@ target_link_libraries(rikerio-server
     ${JSONCPP_LIB}
     ${SPDLOG_LIB}
     pthread)
+
 add_dependencies(rikerio-server common spdlog-build)
 
 install (TARGETS rikerio-server RUNTIME DESTINATION bin)
