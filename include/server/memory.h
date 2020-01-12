@@ -24,7 +24,7 @@ class Memory : public std::set<std::shared_ptr<MemoryArea>> {
      * @param memory size
      * @param profile id
      */
-    Memory(unsigned int, std::string);
+    Memory(unsigned int);
     ~Memory();
 
     /**
@@ -75,9 +75,6 @@ class Memory : public std::set<std::shared_ptr<MemoryArea>> {
     Token token;
 
     unsigned int size;
-    void* ptr;
-
-    std::string filename;
 
     std::map<unsigned int, std::shared_ptr<MemoryArea>> allocMap;
     std::map<unsigned int, unsigned int> freeMap;

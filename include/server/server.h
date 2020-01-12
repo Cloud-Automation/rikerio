@@ -2,6 +2,7 @@
 #define __RIO_SERVER_H__
 
 #include "server/server-interface.h"
+#include "server/shared-memory.h"
 #include "server/memory.h"
 #include "server/data.h"
 #include "server/data-map.h"
@@ -48,6 +49,9 @@ class Server : public ServerInterface {
     static std::mutex alloc_mutex;
     static std::mutex persistent_mutex;
 
+    /* shared memory */
+    SharedMemory sh_mem;
+  
     /* memory management */
     Memory memory;
 

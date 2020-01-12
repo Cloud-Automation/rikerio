@@ -19,7 +19,8 @@ Server::Server(
     id(id),
     size(size),
     cycle(cycle),
-    memory(size, RikerIO::Config::CreateShmPath(id)),
+    sh_mem(size, RikerIO::Config::CreateShmPath(id)),
+    memory(size),
     dataMap(memory),
     linkMap(RikerIO::Config::CreateLinkPath(id)) {
 
