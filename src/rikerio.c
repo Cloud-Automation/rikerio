@@ -397,35 +397,6 @@ static int _rio_memory_write(FILE* fp, rio_alloc_entry_t* list, unsigned int cnt
 
 }
 
-static int _rio_adr_write(FILE* fp, rio_adr_t* list, const unsigned int cntr)
-{
-
-    int length = 0;
-    int fd = fileno(fp);
-
-    lseek(fd, 0, SEEK_SET);
-
-    for (unsigned int i = 0; i < cntr; i += 1)
-    {
-
-        int ret = fprintf(fp, "%d;%d;%d;%d\n",
-                          list[i].byteOffset,
-                          list[i].bitOffset,
-                          list[i].type,
-                          list[i].size);
-
-        if (ret == -1)
-        {
-            return -1;
-        }
-
-        length += ret;
-
-    }
-
-    return length;
-
-}
 
 int rio_profile_count(unsigned int* count)
 {
@@ -1481,7 +1452,9 @@ int rio_link_rmall(rio_profile_t profile)
 
         char linkFile[255] = { 0 };
 
-        sprintf(linkFile, "%s/%s", linksFolder, ent->d_name);
+        strcat(linkFile, linksFolder);
+        strcat(linkFile, "/");
+        strcat(linkFile, ent->d_name);
 
         if (unlink(linkFile) == -1)
         {
@@ -1582,7 +1555,6 @@ exit:
 int rio_alias_link_rm(rio_profile_t profile, rio_alias_t alias, rio_link_t link)
 {
 
-    int found = 0;
     int retVal = 0;
 
     /* 1. try to open and lock file RIO_PERS_PATH/{profile}/alias/{alias} */

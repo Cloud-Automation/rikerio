@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <sys/types.h>
-#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,7 +10,6 @@ extern "C" {
 
 #define RIO_VERSION_MAJOR @VERSION_MAJOR@
 #define RIO_VERSION_MINOR @VERSION_MINOR@
-#define RIO_WITH_SYSTEMD @WITH_SYSTEMD@
 
 #define RIO_ROOT_PATH "/var/run/rikerio"
 #define RIO_PERS_PATH "/var/lib/rikerio"
