@@ -3,7 +3,7 @@ cc = meson.get_compiler('c')
 
 version_conf_data = configuration_data()
 version_conf_data.set('VERSION_MAJOR', '2')
-version_conf_data.set('VERSION_MINOR', '2')
+version_conf_data.set('VERSION_MINOR', '3')
 version_conf_data.set('VERSION_PATCH', '0')
 configure_file(input : 'include/version.h.in',
                output : 'version.h',
@@ -11,7 +11,7 @@ configure_file(input : 'include/version.h.in',
 
 rikerio_conf_data = configuration_data()
 rikerio_conf_data.set('VERSION_MAJOR', '2')
-rikerio_conf_data.set('VERSION_MINOR', '2')
+rikerio_conf_data.set('VERSION_MINOR', '3')
 configure_file(input : 'include/rikerio.h.in',
                output : 'rikerio.h',
                configuration : rikerio_conf_data)
@@ -29,8 +29,8 @@ rikerio_include_directories = include_directories('include', '.')
 rikerio_sl = library('rikerio',
   sources: [ rikerio_lib_sources ],
   include_directories: rikerio_include_directories,
-  version: '2.2.0',
-  soversion: '2.2')
+  version: '2.3.0',
+  soversion: '2.3')
 
 rikerio_dep = declare_dependency(
   include_directories : rikerio_include_directories,

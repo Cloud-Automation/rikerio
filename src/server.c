@@ -19,7 +19,8 @@
 #include "version.h"
 
 
-static struct option long_options[] = {
+static struct option long_options[] =
+{
     { "size", required_argument, NULL, 's' },
     { "id", required_argument, NULL, 'i' },
     { "help", no_argument, NULL, 'h' },
@@ -27,7 +28,8 @@ static struct option long_options[] = {
     { NULL, 0, NULL, 0 }
 };
 
-static struct runtime_st {
+static struct runtime_st
+{
 
     pid_t pid;
 
@@ -44,15 +46,18 @@ static struct runtime_st {
     mode_t dirMode;
     mode_t fileMode;
 
-    struct {
+    struct
+    {
         char folder[255];
         char pFolder[255];
 
-        struct {
+        struct
+        {
             char folder[255];
             char link[255];
         } alias;
-        struct {
+        struct
+        {
             int protection;
             int visibility;
             uint32_t size;
@@ -60,19 +65,23 @@ static struct runtime_st {
             int fd;
             void* ptr;
         } shm;
-        struct {
+        struct
+        {
             char folder[255];
         } links;
-        struct {
+        struct
+        {
             char file[255];
         } alloc;
-        struct {
+        struct
+        {
             char file[255];
             int fd;
             key_t key;
             int id;
         } semaphore;
-        struct {
+        struct
+        {
             char file[255];
             int fd;
         } counter;
@@ -81,7 +90,8 @@ static struct runtime_st {
 
 } runtime;
 
-static void printHelp() {
+static void printHelp()
+{
 
     printf("Usage: rikerio OPTIONS\n\n");
     printf("Options:\n");
@@ -93,17 +103,20 @@ static void printHelp() {
 
 }
 
-static void printVersion() {
+static void printVersion()
+{
     printf("%s\n", VERSION_SHORT);
 }
 
-static void systemd_notify(char* msg) {
+static void systemd_notify(char* msg)
+{
 
     typedef int (*systemd_notify)(int code, const char *param);
 
     void *systemd_so = dlopen("libsystemd.so", RTLD_NOW);
 
-    if (systemd_so == NULL) {
+    if (systemd_so == NULL)
+    {
         printf("No libsystemd.so found. No SystemD notification happening.\n");
         return;
     }
@@ -113,7 +126,8 @@ static void systemd_notify(char* msg) {
     systemd_notify func = (systemd_notify) sd_notify;
     int retVal = func(0, msg);
 
-    if (retVal < 0) {
+    if (retVal < 0)
+    {
         printf("Error notifying (sd_notify) SystemD (%d).\n", retVal);
     }
 
@@ -122,7 +136,8 @@ static void systemd_notify(char* msg) {
 }
 
 
-static int parseArguments(int argc, char* argv[]) {
+static int parseArguments(int argc, char* argv[])
+{
 
     runtime.dirMode = 0770;
     runtime.fileMode = 0664;
@@ -131,6 +146,11 @@ static int parseArguments(int argc, char* argv[]) {
     sprintf(runtime.groupName, "rikerio");
     sprintf(runtime.folder, "/var/run/rikerio");
     sprintf(runtime.pFolder, "/var/lib/rikerio");
+
+    strcat(runtime.profile.folder, runtime.folder);
+    strcat(runtime.profile.folder, "/");
+    strcat(runtime.profile.folder, runtime.id);
+
     sprintf(runtime.profile.folder, "%s/%s", runtime.folder, runtime.id);
     sprintf(runtime.profile.pFolder, "%s/%s", runtime.pFolder, runtime.id);
     sprintf(runtime.profile.alias.folder, "%s/%s", runtime.profile.pFolder, "alias");
@@ -138,7 +158,9 @@ static int parseArguments(int argc, char* argv[]) {
     sprintf(runtime.profile.links.folder, "%s/%s", runtime.profile.folder, "links");
     sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "alloc");
     sprintf(runtime.profile.semaphore.file, "%s/%s", runtime.profile.folder, "sem");
-    sprintf(runtime.profile.counter.file, "%s/%s", runtime.profile.folder, "counter");
+
+    strcat(runtime.profile.counter.file, runtime.profile.folder);
+    strcat(runtime.profile.counter.file, "/counter");
 
     runtime.profile.shm.size = 4096;
     sprintf(runtime.profile.shm.file, "%s/%s", runtime.profile.folder, "shm");
@@ -146,26 +168,31 @@ static int parseArguments(int argc, char* argv[]) {
     runtime.profile.shm.protection = PROT_READ | PROT_WRITE;
     runtime.profile.shm.visibility = MAP_SHARED;
 
-    while (1) {
+    while (1)
+    {
 
         int option_index = 0;
         int c = getopt_long(argc, argv, "s::i::hv", long_options, &option_index);
 
-        if (c == -1) {
+        if (c == -1)
+        {
             break;
         }
 
         unsigned int v;
         char* s;
 
-        switch (c) {
+        switch (c)
+        {
         case 's':
             v = atoi(optarg);
-            if (v <= 0) {
+            if (v <= 0)
+            {
                 fprintf(stderr, "Size musst be greater than zero.\n");
                 return -1;
             }
-            if (v >= UINT32_MAX) {
+            if (v >= UINT32_MAX)
+            {
                 fprintf(stderr, "Max Size is %d.\n", UINT32_MAX);
                 return -1;
             }
@@ -173,7 +200,8 @@ static int parseArguments(int argc, char* argv[]) {
             break;
         case 'i':
             s = optarg;
-            if (strlen(s) == 0) {
+            if (strlen(s) == 0)
+            {
                 fprintf(stderr, "Invalid id.\n");
                 return -1;
             }
@@ -187,7 +215,9 @@ static int parseArguments(int argc, char* argv[]) {
             sprintf(runtime.profile.links.folder, "%s/%s", runtime.profile.folder, "links");
             sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "alloc");
             sprintf(runtime.profile.semaphore.file, "%s/%s", runtime.profile.folder, "sem");
-            sprintf(runtime.profile.counter.file, "%s/%s", runtime.profile.folder, "counter");
+
+            strcat(runtime.profile.counter.file, runtime.profile.folder);
+            strcat(runtime.profile.counter.file, "/counter");
 
             break;
         case 'h':
@@ -207,12 +237,14 @@ static int parseArguments(int argc, char* argv[]) {
 
 }
 
-static int applyGroupAndRights(char* path, mode_t mode) {
+static int applyGroupAndRights(char* path, mode_t mode)
+{
 
     /* get group */
     struct group* grp = getgrnam(runtime.groupName);
 
-    if (!grp) {
+    if (!grp)
+    {
         fprintf(stderr, "No group '%s' found, create user group '%s'.\n", runtime.groupName, runtime.groupName);
         return EXIT_FAILURE;
     }
@@ -220,12 +252,14 @@ static int applyGroupAndRights(char* path, mode_t mode) {
 
     mode_t oldMask = umask(0);
 
-    if (chown(path, -1, grp->gr_gid) != 0) {
+    if (chown(path, -1, grp->gr_gid) != 0)
+    {
         fprintf(stderr, "Error setting group '%s' on '%s'.\n", runtime.groupName, path);
         return -1;
     }
 
-    if (chmod(path, mode) != 0) {
+    if (chmod(path, mode) != 0)
+    {
         fprintf(stderr, "Error setting permissions on '%s'.\n", path);
         return -1;
     }
@@ -236,22 +270,28 @@ static int applyGroupAndRights(char* path, mode_t mode) {
 
 }
 
-static void checkAndCreateFolder(char* folder) {
+static void checkAndCreateFolder(char* folder)
+{
 
     DIR* dir = opendir(folder);
-    if (!dir) {
+    if (!dir)
+    {
         mkdir(folder, runtime.dirMode);
-    } else {
+    }
+    else
+    {
         closedir(dir);
     }
 
 }
 
-static int checkAndCreateLink(char* link, char* target) {
+static int checkAndCreateLink(char* link, char* target)
+{
 
     DIR* dir = opendir(target);
 
-    if (!dir) {
+    if (!dir)
+    {
         return -1;
     }
 
@@ -259,15 +299,18 @@ static int checkAndCreateLink(char* link, char* target) {
 
 }
 
-static int checkAndCreateFile(char* file, int closeFile) {
+static int checkAndCreateFile(char* file, int closeFile)
+{
 
     int fd = open (file, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
-    if (fd == -1) {
+    if (fd == -1)
+    {
         fprintf(stderr, "Error creating file %s (%s).\n", runtime.profile.shm.file, strerror(errno));
     }
 
-    if (closeFile && fd != -1) {
+    if (closeFile && fd != -1)
+    {
         close(fd);
     }
 
@@ -275,7 +318,8 @@ static int checkAndCreateFile(char* file, int closeFile) {
 
 }
 
-void tearDown(int exitCode) {
+void tearDown(int exitCode)
+{
 
     /* remove shared memory file */
 
@@ -289,9 +333,12 @@ void tearDown(int exitCode) {
 
     DIR* d = opendir(runtime.profile.links.folder);
     struct dirent* dir = NULL;
-    while ((dir = readdir(d)) != NULL) {
+    while ((dir = readdir(d)) != NULL)
+    {
         char fName[255] = { };
-        sprintf(fName, "%s/%s", runtime.profile.links.folder, dir->d_name);
+        strcat(fName, runtime.profile.links.folder);
+        strcat(fName, "/");
+        strcat(fName, dir->d_name);
         unlink(fName);
     }
     closedir(d);
@@ -309,13 +356,17 @@ void tearDown(int exitCode) {
 
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
 
     int pa = parseArguments(argc, argv);
 
-    if (pa == -1) {
+    if (pa == -1)
+    {
         return EXIT_FAILURE;
-    } else if (pa == 0) {
+    }
+    else if (pa == 0)
+    {
         return EXIT_SUCCESS;
     }
 
@@ -340,7 +391,8 @@ int main(int argc, char** argv) {
 
     runtime.profile.counter.fd = checkAndCreateFile(runtime.profile.counter.file, 0);
 
-    if (applyGroupAndRights(runtime.profile.counter.file, runtime.fileMode) == -1 ) {
+    if (applyGroupAndRights(runtime.profile.counter.file, runtime.fileMode) == -1 )
+    {
         fprintf(stderr, "Error applying rights to counter file (%s).\n", strerror(errno));
         tearDown(EXIT_FAILURE);
     }
@@ -354,50 +406,61 @@ int main(int argc, char** argv) {
 
     runtime.profile.semaphore.fd = checkAndCreateFile(runtime.profile.semaphore.file, 0);
 
-    if (checkAndCreateLink(runtime.profile.alias.link, runtime.profile.alias.folder) == -1) {
+    if (checkAndCreateLink(runtime.profile.alias.link, runtime.profile.alias.folder) == -1)
+    {
         fprintf(stderr, "Error creating alias link (%s).\n", strerror(errno));
         tearDown(EXIT_FAILURE);
     }
 
-    if (applyGroupAndRights(runtime.profile.alias.link, runtime.dirMode) != 1) {
+    if (applyGroupAndRights(runtime.profile.alias.link, runtime.dirMode) != 1)
+    {
         fprintf(stderr, "Error applying rights to alias link (%s).\n", strerror(errno));
         tearDown(EXIT_FAILURE);
     }
 
-    if (runtime.profile.semaphore.fd == -1) {
+    if (runtime.profile.semaphore.fd == -1)
+    {
         tearDown(EXIT_FAILURE);
     }
 
     /* set group on folder */
-    if (applyGroupAndRights(runtime.folder, runtime.dirMode) != 1) {
+    if (applyGroupAndRights(runtime.folder, runtime.dirMode) != 1)
+    {
         tearDown(EXIT_FAILURE);
     }
 
-    if (applyGroupAndRights(runtime.pFolder, runtime.dirMode) != 1) {
+    if (applyGroupAndRights(runtime.pFolder, runtime.dirMode) != 1)
+    {
         tearDown(EXIT_FAILURE);
     }
 
-    if (applyGroupAndRights(runtime.profile.folder, runtime.dirMode) != 1) {
+    if (applyGroupAndRights(runtime.profile.folder, runtime.dirMode) != 1)
+    {
         tearDown(EXIT_FAILURE);
     }
 
-    if (applyGroupAndRights(runtime.profile.pFolder, runtime.dirMode) != 1) {
+    if (applyGroupAndRights(runtime.profile.pFolder, runtime.dirMode) != 1)
+    {
         tearDown(EXIT_FAILURE);
     }
 
-    if (applyGroupAndRights(runtime.profile.alias.folder, runtime.dirMode) != 1) {
+    if (applyGroupAndRights(runtime.profile.alias.folder, runtime.dirMode) != 1)
+    {
         tearDown(EXIT_FAILURE);
     }
 
-    if (applyGroupAndRights(runtime.profile.links.folder, runtime.dirMode) != 1) {
+    if (applyGroupAndRights(runtime.profile.links.folder, runtime.dirMode) != 1)
+    {
         tearDown(EXIT_FAILURE);
     }
 
-    if (applyGroupAndRights(runtime.profile.alloc.file, runtime.fileMode) != 1) {
+    if (applyGroupAndRights(runtime.profile.alloc.file, runtime.fileMode) != 1)
+    {
         tearDown(EXIT_FAILURE);
     }
 
-    if (applyGroupAndRights(runtime.profile.semaphore.file, runtime.fileMode) != 1) {
+    if (applyGroupAndRights(runtime.profile.semaphore.file, runtime.fileMode) != 1)
+    {
         tearDown(EXIT_FAILURE);
     }
 
@@ -406,16 +469,19 @@ int main(int argc, char** argv) {
 
     runtime.profile.shm.fd = checkAndCreateFile(runtime.profile.shm.file, 0);
 
-    if (runtime.profile.shm.fd == -1) {
+    if (runtime.profile.shm.fd == -1)
+    {
         tearDown(EXIT_FAILURE);
     }
 
-    if (ftruncate(runtime.profile.shm.fd, runtime.profile.shm.size) == -1) {
+    if (ftruncate(runtime.profile.shm.fd, runtime.profile.shm.size) == -1)
+    {
         fprintf(stderr, "Error tuncating file %s (%s).\n)", runtime.profile.shm.file, strerror(errno));
         tearDown(EXIT_FAILURE);
     }
 
-    if (applyGroupAndRights(runtime.profile.shm.file, runtime.fileMode) != 1) {
+    if (applyGroupAndRights(runtime.profile.shm.file, runtime.fileMode) != 1)
+    {
         tearDown(EXIT_FAILURE);
     }
 
@@ -433,19 +499,22 @@ int main(int argc, char** argv) {
     runtime.profile.semaphore.key = runtime.pid;
     runtime.profile.semaphore.id = semget(runtime.profile.semaphore.key, 1, IPC_CREAT | IPC_EXCL | runtime.fileMode);
 
-    if (write(runtime.profile.semaphore.fd, &runtime.profile.semaphore.key, sizeof(runtime.profile.semaphore.key)) < 0) {
+    if (write(runtime.profile.semaphore.fd, &runtime.profile.semaphore.key, sizeof(runtime.profile.semaphore.key)) < 0)
+    {
         fprintf(stderr, "Error writing sempahore.\n");
         tearDown(EXIT_FAILURE);
     }
 
     close(runtime.profile.semaphore.fd);
 
-    if (runtime.profile.semaphore.id < 0) {
+    if (runtime.profile.semaphore.id < 0)
+    {
         fprintf(stderr, "Error creating semaphore.\n");
         tearDown(EXIT_FAILURE);
     }
 
-    if (semctl(runtime.profile.semaphore.id, 0, SETVAL, (int) 1) == -1) {
+    if (semctl(runtime.profile.semaphore.id, 0, SETVAL, (int) 1) == -1)
+    {
         fprintf(stderr, "Error setting semaphore to initial value.\n");
         tearDown(EXIT_FAILURE);
     }
