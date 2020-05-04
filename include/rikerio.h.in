@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <sys/types.h>
+#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,6 +20,20 @@ extern "C" {
 #define RIO_SEM_FILE "sem"
 #define RIO_CNT_FILE "counter"
 
+#define RIO_TYPE_UNDEF  0
+#define RIO_TYPE_BIT    1
+#define RIO_TYPE_BOOL   2
+#define RIO_TYPE_UINT8  3
+#define RIO_TYPE_INT8   4
+#define RIO_TYPE_UINT16 5
+#define RIO_TYPE_INT16  6
+#define RIO_TYPE_UINT32 7
+#define RIO_TYPE_INT32  8
+#define RIO_TYPE_UINT64 9
+#define RIO_TYPE_INT64  10
+#define RIO_TYPE_FLOAT  11
+#define RIO_TYPE_DOUBLE 12
+
 struct rio_adr_st;
 struct rio_adr_entry_st;
 struct rio_alloc_entry_st;
@@ -31,19 +46,27 @@ typedef char rio_label_t[255];
 typedef char rio_link_t[255];
 typedef char rio_alias_t[255];
 typedef char rio_profile_t[255];
+typedef uint32_t rio_byte_offset_t;
+typedef uint8_t rio_bit_index_t;
+typedef uint16_t rio_type_t;
+typedef uint32_t rio_size_t;
 
-struct rio_adr_st
-{
-    uint32_t byteOffset;
-    uint8_t bitOffset;
+
+struct rio_adr_st {
+
+    rio_byte_offset_t byteOffset;
+    rio_bit_index_t bitOffset;
+    rio_type_t type;
+    rio_size_t size;
+
 };
 
-struct rio_alloc_entry_st
-{
+struct rio_alloc_entry_st {
+
     uint32_t offset;
     uint32_t size;
-};
 
+};
 
 /**
  * @brief get number of profiles
