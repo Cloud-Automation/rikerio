@@ -63,6 +63,7 @@ struct rio_alloc_entry_st {
 
     uint32_t offset;
     uint32_t size;
+    char id[32]; // optional
 
 };
 
@@ -98,6 +99,18 @@ int rio_profile_counter_get(rio_profile_t, unsigned int*);
  * @returns 0 on success, -1 on error
  */
 int rio_memory_inspect(rio_profile_t, char**, size_t*);
+
+/**
+ * @brief allocate new memory of the shared memory from a specific profile
+ * @param char* profileId
+ * @param uint32_t requested memory size
+ * @param char[32] optional id
+ * @param void** pointer
+ * @param uint32_t* offset
+ * @returns 0 on success, -1 on error
+ * @since v2.3
+ */
+int rio_alloc_add2(rio_profile_t, uint32_t, char[32], char**, uint32_t*);
 
 
 /**

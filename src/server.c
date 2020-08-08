@@ -159,7 +159,7 @@ static int parseArguments(int argc, char* argv[])
     sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "alloc");
     sprintf(runtime.profile.semaphore.file, "%s/%s", runtime.profile.folder, "sem");
 
-    strcat(runtime.profile.counter.file, runtime.profile.folder);
+    strcpy(runtime.profile.counter.file, runtime.profile.folder);
     strcat(runtime.profile.counter.file, "/counter");
 
     runtime.profile.shm.size = 4096;
@@ -216,8 +216,9 @@ static int parseArguments(int argc, char* argv[])
             sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "alloc");
             sprintf(runtime.profile.semaphore.file, "%s/%s", runtime.profile.folder, "sem");
 
-            strcat(runtime.profile.counter.file, runtime.profile.folder);
+            strcpy(runtime.profile.counter.file, runtime.profile.folder);
             strcat(runtime.profile.counter.file, "/counter");
+
 
             break;
         case 'h':
@@ -240,12 +241,14 @@ static int parseArguments(int argc, char* argv[])
 static int applyGroupAndRights(char* path, mode_t mode)
 {
 
+    printf("Applying rights to %s ... \n", path);
+
     /* get group */
     struct group* grp = getgrnam(runtime.groupName);
 
     if (!grp)
     {
-        fprintf(stderr, "No group '%s' found, create user group '%s'.\n", runtime.groupName, runtime.groupName);
+        printf("no group '%s' found!\n", runtime.groupName);
         return EXIT_FAILURE;
     }
 
@@ -254,13 +257,13 @@ static int applyGroupAndRights(char* path, mode_t mode)
 
     if (chown(path, -1, grp->gr_gid) != 0)
     {
-        fprintf(stderr, "Error setting group '%s' on '%s'.\n", runtime.groupName, path);
+        printf("error setting group!\n");
         return -1;
     }
 
     if (chmod(path, mode) != 0)
     {
-        fprintf(stderr, "Error setting permissions on '%s'.\n", path);
+        printf("error setting permissions!\n");
         return -1;
     }
 
@@ -273,13 +276,20 @@ static int applyGroupAndRights(char* path, mode_t mode)
 static void checkAndCreateFolder(char* folder)
 {
 
+    printf("Checking folder %s ... ", folder);
+
     DIR* dir = opendir(folder);
     if (!dir)
     {
-        mkdir(folder, runtime.dirMode);
+        if (mkdir(folder, runtime.dirMode) != 0) {
+	    printf("error creating (%s).\n", strerror(errno));	
+	} else {
+	    printf("created successfully!\n");
+	}
     }
     else
     {
+	printf("found!\n");
         closedir(dir);
     }
 
@@ -288,25 +298,38 @@ static void checkAndCreateFolder(char* folder)
 static int checkAndCreateLink(char* link, char* target)
 {
 
+    printf("Checking link %s ... ", link);
+
     DIR* dir = opendir(target);
 
     if (!dir)
     {
+	printf("error (%s)!\n", strerror(errno));
         return -1;
     }
 
-    return symlink(target, link);
+    if (symlink(target, link) != 0) {
+        printf("error creating! (%s)\n", strerror(errno));
+	return -1;	
+    } else {
+        printf("created!\n");
+	return 0;
+    }
 
 }
 
 static int checkAndCreateFile(char* file, int closeFile)
 {
 
+    printf("Creating file %s ... ", file);
+
     int fd = open (file, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
     if (fd == -1)
     {
-        fprintf(stderr, "Error creating file %s (%s).\n", runtime.profile.shm.file, strerror(errno));
+        printf("error creating (%s).\n", strerror(errno));
+    } else {
+	printf("success.\n");
     }
 
     if (closeFile && fd != -1)
