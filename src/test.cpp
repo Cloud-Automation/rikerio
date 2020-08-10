@@ -1,62 +1,47 @@
 #include "rikerio.h"
+#include "iostream"
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "cassert"
+
 #define PROFILE "default"
 
 int main() {
 
-    printf("Listing all profiles ... ");
+    RikerIO::Profile profile;
 
-    int retVal = 0;
+    int retVal = RikerIO::init("default", profile);
 
-    unsigned int profileCount = 0;
-
-    retVal  = rio_profile_count(&profileCount);
-
-    if (-1 == retVal) {
-        fprintf(stderr, "Error counting profiles.\n");
-        return EXIT_FAILURE;
-    }
-
-    rio_profile_t* profiles = calloc(profileCount, sizeof(rio_profile_t));
-
-    unsigned int retSize = 0;
-
-    retVal = rio_profile_get(profiles, profileCount, &retSize);
-
-    if (-1 == retVal) {
+    if (retVal == RikerIO::result_error) {
         printf("failed (%s)!\n", strerror(errno));
         return EXIT_FAILURE;
-    } else {
-
-
-        printf("successfull!\n");
-
-        for (unsigned int i = 0; i < profileCount; i += 1) {
-
-            printf("- %s\n", profiles[i]);
-
-        }
-
     }
 
-    free(profiles);
+    assert(strcmp(profile.id, "default") == 0);
+    assert(profile.byte_size == 4096);
 
-    unsigned int activityCounter = 0;
+    RikerIO::Allocation alloc_a;
+    RikerIO::Allocation alloc_b;
 
-    printf("Reading profile activity counter ... ");
+    RikerIO::alloc(profile, 100, "test", alloc_a);
+    RikerIO::alloc(profile, 150, "test-a", alloc_b);
 
-    if (rio_profile_counter_get(PROFILE, &activityCounter) == -1) {
-        printf("failed (%s)\n", strerror(errno));
-        return EXIT_FAILURE;
-    }
+    assert(alloc_a.offset == 0);
+    assert(alloc_b.offset == 100);
 
-    printf("success, counter is at value %d.\n", activityCounter);
+    RikerIO::dealloc(profile, "test");
 
+    RikerIO::Allocation alloc_c;
+
+    RikerIO::alloc(profile, 75, "test-b", alloc_c);
+
+    assert(alloc_c.offset == 0);
+
+#if 0
     char* ptr;
     uint32_t offset = 0;
     uint32_t size = 400;
@@ -146,7 +131,7 @@ int main() {
 
             for (unsigned int i = 0; i < linkCount; i += 1) {
 
-                printf("  Adr %2d = %d.%d.\n" , (i+1), adrList[i].byteOffset, adrList[i].bitOffset);
+                printf("  Adr %2d = %d.%d.\n", (i + 1), adrList[i].byteOffset, adrList[i].bitOffset);
 
             }
 
@@ -183,7 +168,7 @@ int main() {
 
     /* removing all links */
 
-    for (unsigned int i = 0; i < 9; i+= 1) {
+    for (unsigned int i = 0; i < 9; i += 1) {
 
         rio_link_t link;
         sprintf(link, "in.data[%d]", i);
@@ -280,5 +265,7 @@ int main() {
     printf("success.\n");
 
     return EXIT_SUCCESS;
+
+#endif
 
 }

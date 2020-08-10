@@ -1,6 +1,9 @@
 #define _GNU_SOURCE
 
 #include "rikerio.h"
+
+#include "functional"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -16,54 +19,49 @@
 #define RIO_MEMORY_SEM_LOCK -1
 #define RIO_MEMORY_SEM_UNLOCK 1
 
-static rio_size_t _rio_get_bitsizeof_type(rio_type_t type) {
+using namespace RikerIO;
+
+static const int result_error = -1;
+static const int result_ok = 0;
+
+rio_size_t get_bitsizeof(RikerIO::Type type) {
 
     switch (type) {
-    case (RIO_TYPE_UNDEF):
+    case (Type::UNDEF):
         return 0;
-    case (RIO_TYPE_BIT):
+    case (Type::BIT):
         return 1;
-    case (RIO_TYPE_BOOL):
+    case (Type::BOOL):
         return 8;
-    case (RIO_TYPE_UINT8):
+    case (Type::UINT8):
         return 8;
-    case (RIO_TYPE_INT8):
+    case (Type::INT8):
         return 8;
-    case (RIO_TYPE_UINT16):
+    case (Type::UINT16):
         return 16;
-    case (RIO_TYPE_INT16):
+    case (Type::INT16):
         return 16;
-    case (RIO_TYPE_UINT32):
+    case (Type::UINT32):
         return 32;
-    case (RIO_TYPE_INT32):
+    case (Type::INT32):
         return 32;
-    case (RIO_TYPE_UINT64):
+    case (Type::UINT64):
         return 64;
-    case (RIO_TYPE_INT64):
+    case (Type::INT64):
         return 64;
-    case (RIO_TYPE_FLOAT):
+    case (Type::FLOAT):
         return 32;
-    case (RIO_TYPE_DOUBLE):
+    case (Type::DOUBLE):
         return 64;
+    case (Type::STRING):
+        return 0; // undefined
     }
 
     return 0;
 
 }
 
-static int _rio_get_filesize(char* filename, size_t* filesize) {
-
-    struct stat buffer = { };
-    if (stat(filename, &buffer) == 0) {
-        *filesize = buffer.st_size;
-        return 0;
-    } else {
-        return -1;
-    }
-
-}
-
-static int _rio_get_memory_pointer(char* filename, char** ptr, size_t size) {
+static int _rio_get_memory_pointer(const char* filename, char** ptr, size_t size) {
 
     if (!filename || !ptr) {
         return -1;
@@ -83,617 +81,239 @@ static int _rio_get_memory_pointer(char* filename, char** ptr, size_t size) {
         return -1;
     }
 
-    *ptr = p;
+    *ptr = (char*) p;
 
     fclose(fp);
 
     return 0;
 }
 
-static int _rio_file_lock(int fd) {
-    return flock(fd, LOCK_EX);
-}
+int _rio_lock_and_handle(const std::string& filename, int flags, std::function<int(int)> cb) {
 
-static int _rio_file_unlock(int fd) {
-    return flock(fd, LOCK_UN);
-}
+    int fd = open(filename.c_str(), flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
-static int _rio_counter_increase(rio_profile_t profile) {
-
-    int retVal = 0;
-
-    /* 1. get filesize of shm */
-
-    char counterFile[255];
-
-    sprintf(counterFile, "%s/%s/counter", RIO_ROOT_PATH, profile);
-
-    /* 2. open file located on /var/www/rikerio/{id}/counter */
-
-    FILE* fp = fopen(counterFile, "r+");
-
-    if (!fp) {
-        retVal = 0;
-        goto exit;
+    if (!fd) {
+//        error_code = RIO_ERROR_FILE_NOT_FOUND;
+        return RikerIO::result_error;
     }
 
-    int fd = fileno(fp);
-
-    if (_rio_file_lock(fd) == -1) {
-        retVal = -1;
-        goto releaseFile;
+    if (flock(fd, LOCK_EX) == -1) {
+//        error_code = RIO_ERROR_FILE_LOCK;
+        return RikerIO::result_error;
     }
 
-    /* 3. read counter */
+    int ret_val = cb(fd);
 
-    char cntrString[100] = { 0 };
-    ssize_t size = 0;
-    size = read(fd, &cntrString, 100);
-
-    if (size == -1) {
-        retVal = -1;
-        goto releaseFile;
-    }
-
-    unsigned int cntrValue = atoi(cntrString);
-
-    cntrValue += 1;
-
-    if (ftruncate(fd, 0) == -1) {
-        retVal = -1;
-        goto releaseFile;
-    }
-
-    rewind(fp);
-
-    fprintf(fp, "%d", cntrValue);
-
-releaseFile:
-
-    _rio_file_unlock(fd);
-    fclose(fp);
-
-exit:
-
-    return retVal;
-
-
-
-}
-
-static int _rio_split_string(char* src, char*** trg) {
-
-    char delimiter[] = ";";
-    char *ptr;
-    int cntr = 0;
-
-    ptr = strtok(src, delimiter);
-
-    while (ptr != NULL) {
-        *trg = realloc(*trg, (cntr + 1) * sizeof(char*));
-        (*trg)[cntr] = calloc(1, strlen(ptr) + 1);
-        strcpy((*trg)[cntr], ptr);
-
-        cntr += 1;
-
-        ptr = strtok(NULL, delimiter);
-    }
-
-    return cntr;
-
-}
-
-static int _rio_count_lines(FILE* fp, unsigned int* count) {
-
-    char* line = NULL;
-    size_t len = 0;
-    int cntr = 0;
-
-    if (fseek(fp, 0, SEEK_SET) != 0) {
+    if (flock(fd, LOCK_UN) == -1) {
+//        error_code = RIO_ERROR_FILE_UNLOCK;
         return -1;
     }
 
-    while (getline(&line, &len, fp) != -1) {
-        cntr += 1;
-    }
+    close(fd);
 
-    free(line);
-
-    *count = cntr;
-
-    return 0;
+    return ret_val;
 
 }
 
-static int _rio_memory_count(FILE* fp, unsigned int* count) {
+int _read_allocations(int fd, std::vector<RikerIO::Allocation>& alloc_list) {
 
-    return _rio_count_lines(fp, count);
+    do {
 
-}
+        RikerIO::Allocation tmp_entry;
+        int ret = read(fd, &tmp_entry, sizeof(RikerIO::Allocation));
 
-static int _rio_memory_parse(FILE* fp, rio_alloc_entry_t list[], unsigned int listSize, unsigned int* retSize) {
-
-    char* line = NULL;
-    size_t len = 0;
-    ssize_t read;
-    unsigned int cntr = 0;
-
-    if (fseek(fp, 0, SEEK_SET) != 0) {
-        return -1;
-    }
-
-    while ((read = getline(&line, &len, fp)) != -1) {
-
-        if (cntr > listSize) {
-            free(line);
+        if (ret == 0) { // eof
             break;
         }
 
+        alloc_list.push_back(tmp_entry);
 
-        char** strList = NULL;
-        int ret = 0;
+    } while (1);
 
-        char tmp[255] = {};
-        strncpy(tmp, line, strlen(line) - 1);
-
-        ret = _rio_split_string(tmp, &strList);
-
-        free(line);
-        line = NULL;
-
-        /* not enough information in this line */
-
-        if (ret != 2) {
-            return -1;
-        }
-
-        list[cntr].offset = atoi(strList[0]);
-        list[cntr].size = atoi(strList[1]);
-
-        free(strList[0]);
-        free(strList[1]);
-
-        free(strList);
-
-        cntr += 1;
-
-    }
-
-    free(line);
-
-    *retSize = cntr;
-
-    return cntr;
+    return RikerIO::result_ok;
 
 }
 
-static int _rio_adr_count(FILE* fp, unsigned int* count) {
+int _write_allocations(int fd, std::vector<RikerIO::Allocation>& alloc_list) {
 
-    return _rio_count_lines(fp, count);
+    for (auto it = alloc_list.begin(); it != alloc_list.end(); ++it) {
+        write(fd, &*it, sizeof(RikerIO::Allocation));
+    }
+
+    return RikerIO::result_ok;
 
 }
 
-static int _rio_adr_parse(FILE* fp, rio_adr_t list[], unsigned int listSize, unsigned int* retSize) {
-
-    char* line = NULL;
-    size_t len = 0;
-    ssize_t read;
-    unsigned int cntr = 0;
-
-    if (fseek(fp, 0, SEEK_SET) != 0) {
-        return -1;
-    }
-
-    while ((read = getline(&line, &len, fp)) != -1) {
-
-        if (cntr > listSize) {
-            free(line);
-            break;
-        }
-
-        char** strList = NULL;
-        int ret = 0;
-
-        ret = _rio_split_string(line, &strList);
-
-        free(line);
-        line = NULL;
-        len = 0;
-
-        /* not enough information in this line */
-
-        if (ret == 2) {
-            list[cntr].byteOffset = atoi(strList[0]);
-            list[cntr].bitOffset = atoi(strList[1]);
-            list[cntr].type = RIO_TYPE_UNDEF;
-            list[cntr].size = 0;
-
-            free(strList[0]);
-            free(strList[1]);
-        } else if (ret == 3) {
-
-            list[cntr].byteOffset = atoi(strList[0]);
-            list[cntr].bitOffset = atoi(strList[1]);
-            list[cntr].type = atoi(strList[2]);
-            list[cntr].size = _rio_get_bitsizeof_type(list[cntr].type);
-
-            free(strList[0]);
-            free(strList[1]);
-            free(strList[2]);
-
-
-        } else if (ret == 4) {
-
-            list[cntr].byteOffset = atoi(strList[0]);
-            list[cntr].bitOffset = atoi(strList[1]);
-            list[cntr].type = atoi(strList[2]);
-            list[cntr].size = atoi(strList[3]);
-
-            free(strList[0]);
-            free(strList[1]);
-            free(strList[2]);
-            free(strList[3]);
-
-        }
-        free(strList);
-
-        cntr += 1;
-
-    }
-
-    free(line);
-
-    *retSize = cntr;
-
-    return cntr;
-
-}
-
-static int _rio_memory_write(FILE* fp, rio_alloc_entry_t* list, unsigned int cntr) {
-
-    int length = 0;
-    int fd = fileno(fp);
-
-    lseek(fd, 0, SEEK_SET);
-    if (ftruncate(fd, 0) == -1) {
-        return -1;
-    }
-
-    for (unsigned int i = 0; i < cntr; i += 1) {
-
-        int ret = fprintf(fp, "%d;%d\n", list[i].offset, list[i].size);
-
-        if (ret == -1) {
-            return -1;
-        }
-
-        length += ret;
-
-    }
-
-    return length;
-
-}
-
-
-int rio_profile_count(unsigned int* count) {
-
-    if (!count) {
-        return -1;
-    }
-
-    unsigned int fcount = 0;
-
-    char sysFolder[255];
-    sprintf(sysFolder, "%s", RIO_ROOT_PATH);
-
-    DIR* dirp = opendir(sysFolder);
-
-    if (dirp == NULL) {
-        return -1;
-    }
-
-    struct dirent* entry;
-    while ((entry = readdir(dirp)) != NULL) {
-
-        if (strcmp(entry->d_name, ".") == 0) {
-            continue;
-        }
-
-        if (strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
-
-        fcount++;
-    }
-
-    *count = fcount;
-
-    closedir(dirp);
-
-    return 0;
-
-}
-
-int rio_profile_get(rio_profile_t list[], unsigned int listSize, unsigned int* retSize) {
+int RikerIO::init(const std::string& profile_id, Profile& ret_profile) {
 
     /* create link folder */
 
-    char sysFolder[255];
-
-    sprintf(sysFolder, "%s", RIO_ROOT_PATH);
+    const std::string sys_folder = RikerIO::root_path + "/" + profile_id;
+    const std::string profile_info = sys_folder + "/info";
+    const std::string shm_file = sys_folder + "/" + shared_memory_filename;
 
     /* open dir */
 
     DIR *dir;
-    if ((dir = opendir (sysFolder)) == NULL) {
+    if ((dir = opendir (sys_folder.c_str())) == NULL) {
         return -1;
     }
-
-    /* read dir content */
-
-    unsigned int cntr = 0;
-    struct dirent *ent;
-
-    while ((ent = readdir (dir)) != NULL) {
-
-        if (strcmp(ent->d_name, ".") == 0) {
-            continue;
-        }
-
-        if (strcmp(ent->d_name, "..") == 0) {
-            continue;
-        }
-
-        if (cntr > listSize) {
-            break;
-        }
-
-        memset(&list[cntr], 0, sizeof(rio_profile_t));
-        memcpy(&list[cntr], ent->d_name, strlen(ent->d_name));
-
-        cntr++;
-
-    }
-
     closedir (dir);
 
-    *retSize = cntr;
+    /* 1. get profile data */
 
-    return cntr;
+    int fd = open(profile_info.c_str(), O_RDONLY, S_IRUSR);
 
-}
-
-int rio_profile_counter_get(rio_profile_t profile, unsigned int* counter) {
-
-    if (counter == NULL) {
-        return -1;
+    if (fd < 0) {
+        return result_error;
     }
 
-    int retVal = 0;
+    read(fd, &ret_profile, sizeof(RikerIO::Profile));
 
-    /* 1. get filesize of shm */
-
-    char counterFile[255];
-
-    sprintf(counterFile, "%s/%s/counter", RIO_ROOT_PATH, profile);
-
-    /* 2. open file located on /var/www/rikerio/{id}/counter */
-
-    FILE* fp = fopen(counterFile, "r");
-
-    if (!fp) {
-        retVal = 0;
-        goto exit;
-    }
-
-    int fd = fileno(fp);
-
-    if (_rio_file_lock(fd) == -1) {
-        retVal = -1;
-        goto releaseFile;
-    }
-
-    /* 3. read counter */
-
-    char cntrString[100] = { 0 };
-    ssize_t size = 0;
-    size = read(fd, &cntrString, 100);
-
-    if (size == -1) {
-        retVal = -1;
-        goto releaseFile;
-    }
-
-    *counter = atoi(cntrString);
-
-releaseFile:
-
-    _rio_file_unlock(fd);
-    fclose(fp);
-
-exit:
-
-    return retVal;
-
-}
-
-int rio_memory_inspect(rio_profile_t profile, char** ptr, size_t* size) {
-
-    /* 1. get filesize of shm */
-
-    char shmFile[255];
-    sprintf(shmFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_SHM_FILE);
-
-    /* 2. get filesize */
-
-    size_t shmFilesize = 0;
-
-    if (_rio_get_filesize(shmFile, &shmFilesize) == -1) {
-        return -1;
-    }
-
-    *size = shmFilesize;
-
-    /* 3. get memory pointer */
-
-    char* tp = NULL;
-
-    if (_rio_get_memory_pointer(shmFile, &tp, shmFilesize) == -1) {
-        return -1;
-    }
-
-    *ptr = tp;
-
-    return 0;
-
-}
-
-int rio_alloc_add2(rio_profile_t profile, uint32_t size, char id[32], char** ptr, uint32_t* offset) {
-
-    int retVal = 0;
-
-    /* 1. get filesize of shm */
-
-    char shmFile[255];
-    char allocFile[255];
-
-    sprintf(shmFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_SHM_FILE);
-    sprintf(allocFile, "%s/%s/%s", RIO_ROOT_PATH, profile, RIO_ALLOC_FILE);
-
-    size_t shmFilesize = 0;
-
-    if (_rio_get_filesize(shmFile, &shmFilesize) == -1) {
-        retVal = -1;
-        goto exit;
-    }
-
-    /* 2. open file located on /var/www/rikerio/{id}/alloc */
-
-    FILE* fp = fopen(allocFile, "r+");
-
-    if (!fp) {
-        retVal = -1;
-        goto exit;
-    }
-
-    int fd = fileno(fp);
-
-    if (_rio_file_lock(fd) == -1) {
-        retVal = -1;
-        goto releaseFile;
-    }
+    close(fd);
 
     /* 2. get memory pointer */
 
-    char* tp = NULL;
-
-    if (_rio_get_memory_pointer(shmFile, &tp, shmFilesize) == -1) {
-        retVal = -1;
-        goto releaseFile;
+    if (_rio_get_memory_pointer(shm_file.c_str(), &ret_profile.ptr, ret_profile.byte_size) == -1) {
+        return result_error;
     }
 
-    /* 2. read allocations */
+    ret_profile.sem_id = semget(ret_profile.sem_key, 0, 0);
 
-    unsigned int allocCount = 0;
+    return result_ok;
 
-    if (_rio_memory_count(fp, &allocCount) == -1) {
-        retVal = -1;
-        goto releaseFile;
-    }
+}
 
-    rio_alloc_entry_t* curList = calloc(allocCount, sizeof(rio_alloc_entry_t));
-    rio_alloc_entry_t* newList = calloc(1, (allocCount + 1) * sizeof(rio_alloc_entry_t));
+int RikerIO::alloc(const Profile& profile, uint32_t size, const std::string& alloc_id, RikerIO::Allocation& entry) {
 
-    unsigned int retSize = 0;
+    /* 1. get filesize of shm */
 
-    if (_rio_memory_parse(fp, curList, allocCount, &retSize) == -1) {
-        retVal = -1;
-        goto release;
-    }
+    const std::string alloc_file = RikerIO::root_path + "/" + profile.id + "/" + RikerIO::allocation_filename;
 
-    /* 3. fit request */
+    /* 2. open file located on /var/www/rikerio/{id}/alloc */
 
-    uint32_t bufferOffset = 0;
-    int inserted = 0;
+    return _rio_lock_and_handle(alloc_file, O_RDWR, [&](int fd) {
 
-    for (unsigned int i = 0; i < allocCount + 1; i += 1) {
+        /* 1. read allocations */
 
-        /* if there is a allocation with said id and size then return this
-         * and do not create a new entry */
-        if (strcmp(id, "") != 0 && strcmp(curList[i].id, id) == 0) {
+        std::vector<RikerIO::Allocation> alloc_list;
 
-            if (curList[i].size == size) {
-                *ptr = tp + curList[i].offset;
-                *offset = curList[i].offset;
-                retVal = 0;
-                goto release;
+        _read_allocations(fd, alloc_list);
+
+        /* 2. look for an existing allocation */
+
+
+        for (auto it = alloc_list.begin() ; it != alloc_list.end(); ++it) {
+            auto& alloc_item = *it;
+            bool id_match = "" && strcmp(alloc_item.id, alloc_id.c_str()) == 0;
+            bool size_match = alloc_item.byte_size == size;
+            /* if there is a allocation with said id and size then return this
+             * and do not create a new entry */
+
+            if (id_match && size_match) {
+                entry = alloc_item;
+                entry.ptr = profile.ptr + alloc_item.offset;
+                return RikerIO::result_ok;
+            } else if (id_match && !size_match) {
+                alloc_list.erase(it);
+                break;
+            }
+
+        }
+
+        uint32_t start = 0;
+        uint32_t end = 0;
+        bool inserted = false;
+
+        auto it = alloc_list.begin();
+
+        do {
+
+            if (it == alloc_list.end()) {
+                end = profile.byte_size;
             } else {
-                retVal = -1;
-                goto release;
+                auto& alloc_item = *it;
+                end = alloc_item.offset;
+            }
+
+            long diff = end - start;
+
+            if (diff >= size) {
+                inserted = true;
+                RikerIO::Allocation new_entry = { start, size, "", NULL };
+                strcpy(new_entry.id, alloc_id.c_str());
+                alloc_list.insert(it == alloc_list.end() ? it : it+1, new_entry);
+                new_entry.ptr = profile.ptr + start;
+                entry = new_entry;
+                break;
+            } else {
+                if (it != alloc_list.end()) {
+                    start = end + (*it).byte_size;
+                }
+            }
+
+            it++;
+
+        } while (it <= alloc_list.end());
+
+        /* 5. write back */
+
+        _write_allocations(fd, alloc_list);
+
+        return !inserted ? RikerIO::result_error : RikerIO::result_ok;
+
+    });
+
+}
+
+int RikerIO::dealloc(const Profile& profile, const std::string& alloc_id) {
+
+    /* 1. get filesize of shm */
+
+    const std::string alloc_file = RikerIO::root_path + "/" + profile.id + "/" + RikerIO::allocation_filename;
+
+    /* 2. open file located on /var/www/rikerio/{id}/alloc */
+
+    return _rio_lock_and_handle(alloc_file, O_RDWR, [&](int fd) {
+
+        /* 1. read allocations */
+
+        std::vector<RikerIO::Allocation> alloc_list;
+
+        _read_allocations(fd, alloc_list);
+
+        bool erased = false;
+
+        /* 2. look for an existing allocation */
+
+        for (auto it = alloc_list.begin() ; it != alloc_list.end(); ++it) {
+
+            auto& alloc_item = *it;
+            bool id_match = "" && strcmp(alloc_item.id, alloc_id.c_str()) == 0;
+            /* if there is a allocation with said id and size then return this
+             * and do not create a new entry */
+
+            if (id_match) {
+                alloc_list.erase(it);
+                erased = true;
+                break;
             }
         }
 
-        if (inserted) {
-            memcpy(&newList[i + inserted], &curList[i], sizeof(rio_alloc_entry_t));
-            continue;
+        /* 5. write back */
+
+        if (erased) {
+            _write_allocations(fd, alloc_list);
         }
 
-        long diff;
+        return !erased ? RikerIO::result_error : RikerIO::result_ok;
 
-        if (i == allocCount) {
-            diff = shmFilesize - bufferOffset;
-        } else {
-            diff = curList[i].offset - bufferOffset;
-        }
-
-        if (diff >= size && !inserted) {
-            rio_alloc_entry_t newEntry = { bufferOffset, size, "" };
-            strcpy(newEntry.id, id);
-            memcpy(&newList[i], &newEntry, sizeof(rio_alloc_entry_t));
-            inserted = 1;
-            *offset = bufferOffset;
-            *ptr = tp + bufferOffset;
-        } else {
-            bufferOffset = curList[i].offset + curList[i].size;
-            memcpy(&newList[i + inserted], &curList[i], sizeof(rio_alloc_entry_t));
-        }
-
-    }
-
-    if (!inserted) {
-        retVal = -1;
-        goto release;
-    }
-
-    /* 5. write back */
-
-    if (_rio_memory_write(fp, newList, allocCount + 1) == -1) {
-        retVal = -1;
-    }
-
-    _rio_counter_increase(profile);
-
-release:
-
-    free(curList);
-    free(newList);
-
-releaseFile:
-
-    _rio_file_unlock(fd);
-    fclose(fp);
-
-exit:
-
-    return retVal;
+    });
 
 }
 
-int rio_alloc_add(rio_profile_t profile, uint32_t size, char** ptr, uint32_t* offset) {
-    return rio_alloc_add2(profile, size, "", ptr, offset);
-}
 
+#if 0
 
 int rio_alloc_rm(rio_profile_t profile, uint32_t offset) {
 
@@ -730,8 +350,8 @@ int rio_alloc_rm(rio_profile_t profile, uint32_t offset) {
         goto releaseFile;
     }
 
-    rio_alloc_entry_t* curList = calloc(allocCount, sizeof(rio_alloc_entry_t));
-    rio_alloc_entry_t* newList = calloc(allocCount - 1, sizeof(rio_alloc_entry_t));
+    RikerIO::Allocation* curList = calloc(allocCount, sizeof(RikerIO::Allocation));
+    RikerIO::Allocation* newList = calloc(allocCount - 1, sizeof(RikerIO::Allocation));
 
     unsigned int retSize = 0;
 
@@ -751,7 +371,7 @@ int rio_alloc_rm(rio_profile_t profile, uint32_t offset) {
             continue;
         }
 
-        memcpy(&newList[i - removed], &curList[i], sizeof(rio_alloc_entry_t));
+        memcpy(&newList[i - removed], &curList[i], sizeof(RikerIO::Allocation));
 
     }
 
@@ -864,7 +484,7 @@ exit:
 
 }
 
-int rio_alloc_get(rio_profile_t profile, rio_alloc_entry_t list[], unsigned int listSize, unsigned int* retSize) {
+int rio_alloc_get(rio_profile_t profile, RikerIO::Allocation list[], unsigned int listSize, unsigned int* retSize) {
 
     int retVal = 0;
 
@@ -1737,3 +1357,5 @@ int rio_sem_unlock(int semId) {
     return 1;
 
 }
+
+#endif
