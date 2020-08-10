@@ -189,6 +189,8 @@ int main() {
     assert(link_list_a[0] == "in.link.a");
     assert(link_list_a[1] == "in.link.b");
 
+    return EXIT_SUCCESS;
+
     // clean up
 
     // 1. remove all links

@@ -57,7 +57,7 @@ typedef struct rio_data_st rio_data_t;
 
 typedef char rio_label_t[255];
 
-BitSize get_bitsizeof(Type& type);
+BitSize get_bitsizeof(Type type);
 ByteSize calc_bytesize(BitSize);
 
 struct PACKED Profile {
@@ -107,6 +107,7 @@ struct PACKED DataPoint {
     }
 };
 
+std::string type_to_string(Type);
 
 
 int init(const std::string&, Profile&);

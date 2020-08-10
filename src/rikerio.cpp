@@ -22,7 +22,7 @@ using namespace RikerIO;
 static const int result_error = -1;
 static const int result_ok = 0;
 
-RikerIO::BitSize RikerIO::get_bitsizeof(RikerIO::Type& type) {
+RikerIO::BitSize RikerIO::get_bitsizeof(RikerIO::Type type) {
 
     switch (type) {
     case (Type::UNDEF):
@@ -68,6 +68,44 @@ RikerIO::ByteSize RikerIO::calc_bytesize(BitSize bit_size) {
     return rest > 0 ? (full_bytes + 1) : full_bytes;
 
 }
+
+std::string RikerIO::type_to_string(RikerIO::Type type) {
+
+    switch (type) {
+    case (Type::UNDEF):
+        return "undefined";
+    case (Type::BIT):
+        return "bit";
+    case (Type::BOOL):
+        return "bool";
+    case (Type::UINT8):
+        return "uint8";
+    case (Type::INT8):
+        return "int8";
+    case (Type::UINT16):
+        return "uint16";
+    case (Type::INT16):
+        return "int16";
+    case (Type::UINT32):
+        return "uint32";
+    case (Type::INT32):
+        return "int32";
+    case (Type::UINT64):
+        return "uint64";
+    case (Type::INT64):
+        return "int64";
+    case (Type::FLOAT):
+        return "float";
+    case (Type::DOUBLE):
+        return "double";
+    case (Type::STRING):
+        return "string"; // undefined
+    }
+
+    return "undefined";
+
+}
+
 
 static int _rio_get_memory_pointer(const char* filename, uint8_t** ptr, size_t size) {
 

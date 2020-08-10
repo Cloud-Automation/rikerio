@@ -5,11 +5,11 @@
 #include <errno.h>
 #include "rikerio.h"
 #include "version.h"
+#include "iostream"
 
-char profile[255] = "default";
-char alias[255] = "";
-rio_link_t* links = NULL;
-unsigned int keyCount = 0;
+std::string profile_id = "default";
+std::string link_key = "";
+std::vector<std::string> data_ids;
 
 static struct option long_options[] = {
     { "id", required_argument, NULL, 'i' },
@@ -20,11 +20,11 @@ static struct option long_options[] = {
 
 static void printHelp() {
 
-    printf("Usage: rio-alias-add OPTIONS alias key...\n\n");
+    printf("Usage: rio-link-add OPTIONS key id...\n\n");
     printf("Options:\n");
-    printf("\t-i|--id\t\tName of the memory profile.\n");
+    printf("\t-i|--id\t\tProfile.\n");
     printf("\t-v|--version\tPrint version.\n");
-    printf("\t-h|--help\t\tPrint this help.\n\n");
+    printf("\t-h|--help\tPrint this help.\n\n");
     printf("Created by Stefan Pöter<rikerio@cloud-automation.de>.\n");
 
 }
@@ -44,17 +44,13 @@ static int parseArguments(int argc, char* argv[]) {
             break;
         }
 
-        char* s;
-
         switch (c) {
         case 'i':
-            s = optarg;
-            if (strlen(s) == 0) {
+            if (strlen(optarg) == 0) {
                 fprintf(stderr, "Invalid id.\n");
                 return -1;
             }
-            memset(profile, 0, 255);
-            sprintf(profile, "%s", s);
+            profile_id = optarg;
 
             break;
         case 'h':
@@ -76,16 +72,13 @@ static int parseArguments(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    strcpy(alias, argv[optind]);
+    link_key = argv[optind];
 
-    unsigned int lIndex = 0;
     for (int index = optind + 1; index < argc; index += 1) {
-        links = realloc(links, (lIndex + 1) * sizeof(rio_link_t));
-        memcpy(&links[lIndex++], argv[index], strlen(argv[index]));
-        keyCount += 1;
+        data_ids.push_back(std::string(argv[index]));
     }
 
-    if (keyCount == 0) {
+    if (data_ids.size() == 0) {
         fprintf(stderr, "Missing key(s).\n");
         exit(EXIT_FAILURE);
     }
@@ -98,22 +91,27 @@ static int parseArguments(int argc, char* argv[]) {
 
 int main(int argc, char** argv) {
 
-    int retVal = EXIT_SUCCESS;
-
     parseArguments(argc, argv);
 
-    for (unsigned int index = 0; index < keyCount; index += 1) {
+    RikerIO::Profile profile;
 
-        if (rio_alias_link_add(profile, alias, links[index]) == -1) {
-            fprintf(stderr, "Error adding alias (%s).\n", strerror(errno));
-            retVal = EXIT_FAILURE;
-            goto exit;
-        }
-
+    if (RikerIO::init(profile_id, profile) == RikerIO::result_error) {
+        std::cerr << "Error initializing profile." << std::endl;
+        return EXIT_FAILURE;
     }
 
-exit:
-    free(links);
+    unsigned int err_count = 0;
+    for (auto& id : data_ids) {
+        if (RikerIO::Link::set(profile, link_key, id) == RikerIO::result_error) {
+            err_count += 1;
+        }
+    }
 
-    return retVal;
+    if (err_count > 0 ) {
+        std::cerr << "Errors occured while adding links." << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+
 }
