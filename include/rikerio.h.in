@@ -39,14 +39,11 @@ enum class Type {
     STRING = 13
 };
 
-#define RIO_RET_OK                0
-#define RIO_RET_ERROR            -1
-
-#define RIO_ERROR_FILE_NOT_FOUND -2
-#define RIO_ERROR_FILE_LOCK      -3
-#define RIO_ERROR_FILE_UNLOCK    -4
-
-
+typedef char ID[64];
+typedef uint32_t ByteOffset;
+typedef uint8_t BitIndex;
+typedef uint32_t ByteSize;
+typedef uint32_t BitSize;
 
 struct rio_profile_st;
 struct rio_adr_st;
@@ -58,41 +55,58 @@ typedef struct rio_adr_st rio_adr_t;
 typedef struct rio_alloc_st rio_alloc_t;
 typedef struct rio_data_st rio_data_t;
 
-typedef char rio_id_t[32];
 typedef char rio_label_t[255];
-typedef uint32_t rio_byte_offset_t;
-typedef uint8_t rio_bit_index_t;
-typedef uint16_t rio_type_t;
-typedef uint32_t rio_size_t;
 
-struct PACKED rio_adr_st {
-    rio_byte_offset_t byte_offset;
-    rio_bit_index_t bit_offset;
-};
-
-struct PACKED rio_data_st {
-    rio_id_t id;
-    rio_adr_t adr;
-    rio_type_t type;
-    rio_size_t byte_size;
-};
-
-rio_size_t get_bitsizeof(rio_type_t type);
+BitSize get_bitsizeof(Type& type);
+ByteSize calc_bytesize(BitSize);
 
 struct PACKED Profile {
-    rio_id_t id;
-    char* ptr;
+    ID id;
     size_t byte_size;
     int sem_key;
     int sem_id;
+    uint32_t base_cycle;
+    uint8_t* ptr;
 };
 
 struct PACKED Allocation {
     uint32_t offset;
     uint32_t byte_size;
-    rio_id_t id; // optional
-    char* ptr;
+    ID id; // optional
+    uint8_t* ptr;
+    uint32_t local_byte_offset;
+    Allocation() : offset(0), byte_size(0), id(""), ptr(NULL), local_byte_offset(0) { }
 };
+
+struct PACKED DataPoint {
+    RikerIO::ID id;
+    Type type;
+    BitSize bit_size;
+    ByteOffset byte_offset;
+    BitIndex bit_index;
+    uint8_t* ptr;
+    DataPoint() :
+        id(""),
+        type(Type::UNDEF),
+        bit_size(0),
+        byte_offset(0),
+        bit_index(0),
+        ptr(NULL) { }
+    DataPoint(Type type, ByteSize bs = 0) :
+        id(""),
+        type(type),
+        bit_size(RikerIO::get_bitsizeof(type)),
+        byte_offset(0),
+        bit_index(0),
+        ptr(NULL) {
+
+        if (type == Type::UNDEF || type == Type::STRING) {
+            bit_size = bs * 8;
+        }
+
+    }
+};
+
 
 
 int init(const std::string&, Profile&);
@@ -134,20 +148,19 @@ int dealloc(const Profile&, const std::string&);
  * @param unsigned int* number of items copied to the list
  * @returns 0 on success, -1 on error
  */
-int alloc_list(const std::string&, std::vector<Allocation>);
+int list(const Profile&, std::vector<Allocation>&);
 
 /**
  * @brief lock semaphore
  * @param int semaphore id
  */
-int lock(rio_profile_t&);
+int lock(const Profile&);
 
 /**
  * @brief unlock semaphore
  * @param int semaphore id
  */
-int unlock(rio_profile_t&);
-
+int unlock(const Profile&);
 
 namespace Data {
 
@@ -158,7 +171,11 @@ namespace Data {
  * @param rio_adr_t adr, NULL removed data
  * @returns 0 on success, -1 on failure
  */
-int set(const std::string&, const std::string&, rio_adr_t&);
+int set(const Profile&, Allocation&, const std::string&, DataPoint&);
+int set(const Profile&, const Allocation&, const std::string&, ByteOffset, BitIndex, DataPoint&);
+int set(const Profile&, const std::string&, ByteOffset, BitIndex, DataPoint&);
+
+int remove(const Profile&, const std::string&);
 
 /**
  * @brief Get all adr from a link.
@@ -169,7 +186,7 @@ int set(const std::string&, const std::string&, rio_adr_t&);
  * @param unsigned int* number of items copied to the list
  * @returns 0 on success or -1 on error
  */
-int get(const std::string&, const std::string&, rio_adr_t&);
+int get(const RikerIO::Profile&, const std::string&, RikerIO::DataPoint&);
 
 /**
  * @brief get list of links
@@ -179,7 +196,7 @@ int get(const std::string&, const std::string&, rio_adr_t&);
  * @param unsigned int* number of items copied to the list
  * @return 0 on success, -1 on error
  */
-int list(const std::string&, std::vector<rio_data_t>&);
+int list(const RikerIO::Profile&, std::vector<std::string>&);
 
 }
 
@@ -191,7 +208,7 @@ namespace Link {
  * @param rio_link_t link
  * @returns 0 on success, -1 on failure
  */
-int set(const std::string&, const std::string&, const std::string&);
+int set(const RikerIO::Profile&, const std::string&, const std::string&);
 
 /**
  * @brief remove alias.
@@ -200,7 +217,9 @@ int set(const std::string&, const std::string&, const std::string&);
  * @param rio_data_t* specific to remove or null for all
  * @returns 0 on success, -1 on failure
  */
-int remove(const std::string&, const std::string&, const std::string& = "");
+int remove(const Profile&, const std::string&, const std::string&);
+
+int remove(const Profile&, const std::string&);
 
 /**
  * @brief get linkcount from alias
@@ -209,8 +228,10 @@ int remove(const std::string&, const std::string&, const std::string& = "");
  * @params unsigned int* pointer to count value
  * @returns number of links, -1 on error
  */
-int get(const std::string&, const std::string&, std::vector<rio_data_t>&);
+int get(const Profile&, const std::string&, std::vector<std::string>&);
 
+
+int list(const Profile&, std::vector<std::string>&);
 
 }
 

@@ -23,6 +23,7 @@
 static struct option long_options[] = {
     { "size", required_argument, NULL, 's' },
     { "id", required_argument, NULL, 'i' },
+    { "cycle", required_argument, NULL, 'c' },
     { "help", no_argument, NULL, 'h' },
     { "version", no_argument, NULL, 'v' },
     { NULL, 0, NULL, 0 }
@@ -33,6 +34,8 @@ static struct runtime_st {
     pid_t pid;
 
     int running;
+
+    uint32_t base_cycle;
 
     char id[20];
     char folder[255];
@@ -53,7 +56,7 @@ static struct runtime_st {
         struct {
             char folder[255];
             char link[255];
-        } alias;
+        } links;
         struct {
             int protection;
             int visibility;
@@ -64,7 +67,7 @@ static struct runtime_st {
         } shm;
         struct {
             char folder[255];
-        } links;
+        } data;
         struct {
             char file[255];
         } alloc;
@@ -82,7 +85,8 @@ static void printHelp() {
     printf("Usage: rikerio OPTIONS\n\n");
     printf("Options:\n");
     printf("\t-s|--size\t\tBytesize of Shared Memory Section, defaults to 4096.\n");
-    printf("\t-i|--id\t\tName of the memory profile.\n");
+    printf("\t-i|--id\t\tName of the memory profile (default value = 'default').\n");
+    printf("\t-c|--cycle\t\tBase Cycle (defaults to 10000us).\n");
     printf("\t-v|--version\tPrint version.\n");
     printf("\t-h|--help\t\tPrint this help.\n\n");
     printf("Created by Stefan Pöter<rikerio@cloud-automation.de>.\n");
@@ -123,6 +127,8 @@ static int parseArguments(int argc, char* argv[]) {
     runtime.dirMode = 0770;
     runtime.fileMode = 0664;
 
+    runtime.base_cycle = 10000;
+
     sprintf(runtime.id, "default");
     sprintf(runtime.groupName, "rikerio");
     sprintf(runtime.folder, "/var/run/rikerio");
@@ -134,9 +140,9 @@ static int parseArguments(int argc, char* argv[]) {
 
     sprintf(runtime.profile.folder, "%s/%s", runtime.folder, runtime.id);
     sprintf(runtime.profile.pFolder, "%s/%s", runtime.pFolder, runtime.id);
-    sprintf(runtime.profile.alias.folder, "%s/%s", runtime.profile.pFolder, "alias");
-    sprintf(runtime.profile.alias.link, "%s/%s", runtime.profile.folder, "alias");
-    sprintf(runtime.profile.links.folder, "%s/%s", runtime.profile.folder, "links");
+    sprintf(runtime.profile.links.folder, "%s/%s", runtime.profile.pFolder, "links");
+    sprintf(runtime.profile.links.link, "%s/%s", runtime.profile.folder, "links");
+    sprintf(runtime.profile.data.folder, "%s/%s", runtime.profile.folder, "data");
     sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "alloc");
 
     runtime.profile.shm.size = 4096;
@@ -155,6 +161,7 @@ static int parseArguments(int argc, char* argv[]) {
         }
 
         unsigned int v;
+        uint32_t base_cycle_value;
         char* s;
 
         switch (c) {
@@ -170,6 +177,14 @@ static int parseArguments(int argc, char* argv[]) {
             }
             runtime.profile.shm.size = v;
             break;
+        case 'c':
+            base_cycle_value = atoi(optarg);
+            runtime.base_cycle = base_cycle_value;
+            if (base_cycle_value == 0) {
+                fprintf(stderr, "Base Cycle musst be bigger than zero.\n");
+                return -1;
+            }
+            break;
         case 'i':
             s = optarg;
             if (strlen(s) == 0) {
@@ -180,11 +195,11 @@ static int parseArguments(int argc, char* argv[]) {
 
             sprintf(runtime.profile.folder, "%s/%s", runtime.folder, runtime.id);
             sprintf(runtime.profile.pFolder, "%s/%s", runtime.pFolder, runtime.id);
-            sprintf(runtime.profile.alias.folder, "%s/%s", runtime.profile.pFolder, "alias");
-            sprintf(runtime.profile.alias.link, "%s/%s", runtime.profile.folder, "alias");
+            sprintf(runtime.profile.links.folder, "%s/%s", runtime.profile.pFolder, "links");
+            sprintf(runtime.profile.links.link, "%s/%s", runtime.profile.folder, "links");
             sprintf(runtime.profile.info_file, "%s/%s", runtime.profile.folder, "info");
             sprintf(runtime.profile.shm.file, "%s/%s", runtime.profile.folder, "shm");
-            sprintf(runtime.profile.links.folder, "%s/%s", runtime.profile.folder, "links");
+            sprintf(runtime.profile.data.folder, "%s/%s", runtime.profile.folder, "data");
             sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "alloc");
 
             break;
@@ -304,20 +319,20 @@ void tearDown(int exitCode) {
     unlink(runtime.profile.info_file);
     unlink(runtime.profile.shm.file);
     unlink(runtime.profile.alloc.file);
-    unlink(runtime.profile.alias.link);
+    unlink(runtime.profile.links.link);
 
-    DIR* d = opendir(runtime.profile.links.folder);
+    DIR* d = opendir(runtime.profile.data.folder);
     struct dirent* dir = NULL;
     while ((dir = readdir(d)) != NULL) {
         char fName[255] = { };
-        strcat(fName, runtime.profile.links.folder);
+        strcat(fName, runtime.profile.data.folder);
         strcat(fName, "/");
         strcat(fName, dir->d_name);
         unlink(fName);
     }
     closedir(d);
 
-    rmdir(runtime.profile.links.folder);
+    rmdir(runtime.profile.data.folder);
     rmdir(runtime.profile.folder);
 
     runtime.running = 0;
@@ -346,6 +361,7 @@ int main(int argc, char** argv) {
     strcpy(profile.id, runtime.id);
     profile.byte_size = runtime.profile.shm.size;
     profile.sem_key = getpid();
+    profile.base_cycle = runtime.base_cycle;
 
     /* get pid */
 
@@ -355,22 +371,22 @@ int main(int argc, char** argv) {
 
     checkAndCreateFolder(runtime.folder);
     checkAndCreateFolder(runtime.profile.folder);
-    checkAndCreateFolder(runtime.profile.links.folder);
+    checkAndCreateFolder(runtime.profile.data.folder);
     checkAndCreateFile(runtime.profile.info_file, 1);
     checkAndCreateFile(runtime.profile.alloc.file, 1);
 
     checkAndCreateFolder(runtime.pFolder);
     checkAndCreateFolder(runtime.profile.pFolder);
-    checkAndCreateFolder(runtime.profile.alias.folder);
+    checkAndCreateFolder(runtime.profile.links.folder);
 
     /* create semphore file */
 
-    if (checkAndCreateLink(runtime.profile.alias.link, runtime.profile.alias.folder) == -1) {
+    if (checkAndCreateLink(runtime.profile.links.link, runtime.profile.links.folder) == -1) {
         fprintf(stderr, "Error creating alias link (%s).\n", strerror(errno));
         tearDown(EXIT_FAILURE);
     }
 
-    if (applyGroupAndRights(runtime.profile.alias.link, runtime.dirMode) != 1) {
+    if (applyGroupAndRights(runtime.profile.links.link, runtime.dirMode) != 1) {
         fprintf(stderr, "Error applying rights to alias link (%s).\n", strerror(errno));
         tearDown(EXIT_FAILURE);
     }
@@ -392,11 +408,11 @@ int main(int argc, char** argv) {
         tearDown(EXIT_FAILURE);
     }
 
-    if (applyGroupAndRights(runtime.profile.alias.folder, runtime.dirMode) != 1) {
+    if (applyGroupAndRights(runtime.profile.links.folder, runtime.dirMode) != 1) {
         tearDown(EXIT_FAILURE);
     }
 
-    if (applyGroupAndRights(runtime.profile.links.folder, runtime.dirMode) != 1) {
+    if (applyGroupAndRights(runtime.profile.data.folder, runtime.dirMode) != 1) {
         tearDown(EXIT_FAILURE);
     }
 
