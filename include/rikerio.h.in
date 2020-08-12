@@ -1,9 +1,10 @@
 #ifndef __RIKERIO_LIB_H__
 #define __RIKERIO_LIB_H__
 
-#include <stdint.h>
-#include <sys/types.h>
+#include "stdint.h"
+#include "sys/types.h"
 
+#include "filesystem"
 #include "string"
 #include "vector"
 
@@ -21,6 +22,7 @@ static const std::string root_path = "/var/run/rikerio";
 static const std::string persistent_path = "/var/lib/rikerio";
 static const std::string allocation_filename = "alloc";
 static const std::string shared_memory_filename = "shm";
+static const std::string last_changed_filename = "last";
 
 enum class Type {
     UNDEF  = 0,
@@ -44,18 +46,6 @@ typedef uint32_t ByteOffset;
 typedef uint8_t BitIndex;
 typedef uint32_t ByteSize;
 typedef uint32_t BitSize;
-
-struct rio_profile_st;
-struct rio_adr_st;
-struct rio_adr_entry_st;
-struct rio_data_st;
-
-typedef struct rio_profile_st rio_profile_t;
-typedef struct rio_adr_st rio_adr_t;
-typedef struct rio_alloc_st rio_alloc_t;
-typedef struct rio_data_st rio_data_t;
-
-typedef char rio_label_t[255];
 
 BitSize get_bitsizeof(Type type);
 ByteSize calc_bytesize(BitSize);
@@ -162,6 +152,11 @@ int lock(const Profile&);
  * @param int semaphore id
  */
 int unlock(const Profile&);
+
+/**
+ * @brief get last time something happend in this profile
+ */
+std::filesystem::file_time_type last_write(const Profile&);
 
 namespace Data {
 

@@ -1,5 +1,8 @@
-project('rikerio-server', 'cpp')
+project('rikerio-server', 'cpp', 
+    default_options: [ 'cpp_std=c++17' ])
 cc = meson.get_compiler('cpp')
+
+add_project_link_arguments(['-lstdc++fs'], language : 'cpp')
 
 version_conf_data = configuration_data()
 version_conf_data.set('VERSION_MAJOR', '2')

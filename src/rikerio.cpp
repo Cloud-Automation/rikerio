@@ -233,6 +233,16 @@ int _write_links(int fd, std::vector<std::string>& data_point_list) {
 
 }
 
+void _update_last_changed(const RikerIO::Profile& profile) {
+
+    const std::string filepath = root_path + "/" + std::string(profile.id) + "/" + last_changed_filename;
+
+    std::filesystem::path p(filepath);
+
+    std::filesystem::last_write_time(p, std::filesystem::file_time_type::clock::now());
+
+}
+
 bool _fit_allocation(
     const RikerIO::Profile& profile,
     std::vector<RikerIO::Allocation>& alloc_list,
@@ -361,6 +371,14 @@ int RikerIO::unlock(const RikerIO::Profile& profile) {
 
 }
 
+std::filesystem::file_time_type RikerIO::last_write(const Profile& profile) {
+
+    const std::string last_change_file = root_path + "/" + std::string(profile.id) + "/" + last_change_file;
+    const std::filesystem::path p(last_change_file);
+
+    return std::filesystem::last_write_time(p);
+
+}
 
 int RikerIO::alloc(const Profile& profile, uint32_t size, const std::string& alloc_id, RikerIO::Allocation& entry) {
 
@@ -394,7 +412,12 @@ int RikerIO::alloc(const Profile& profile, uint32_t size, const std::string& all
 
         _write_allocations(fd, alloc_list);
 
-        return !inserted ? RikerIO::result_error : RikerIO::result_ok;
+        if (inserted) {
+            _update_last_changed(profile);
+            return RikerIO::result_ok;
+        }
+
+        return RikerIO::result_error;
 
     });
 
@@ -444,7 +467,12 @@ int RikerIO::realloc(const Profile& profile, uint32_t size, const std::string& a
 
         _write_allocations(fd, alloc_list);
 
-        return !inserted ? RikerIO::result_error : RikerIO::result_ok;
+        if (inserted) {
+            _update_last_changed(profile);
+            return RikerIO::result_ok;
+        }
+
+        return RikerIO::result_error;
 
     });
 
@@ -489,9 +517,11 @@ int RikerIO::dealloc(const Profile& profile, const std::string& alloc_id) {
 
         if (erased) {
             _write_allocations(fd, alloc_list);
+            _update_last_changed(profile);
+            return RikerIO::result_ok;
         }
 
-        return !erased ? RikerIO::result_error : RikerIO::result_ok;
+        return RikerIO::result_error;
 
     });
 
@@ -539,6 +569,8 @@ int RikerIO::Data::set(const Profile& profile, Allocation& alloc, const std::str
             return result_error;
         }
 
+        _update_last_changed(profile);
+
         return result_ok;
 
     });
@@ -579,6 +611,8 @@ int RikerIO::Data::set(
             return result_error;
         }
 
+        _update_last_changed(profile);
+
         return result_ok;
 
     });
@@ -618,6 +652,8 @@ int RikerIO::Data::set(
             return result_error;
         }
 
+        _update_last_changed(profile);
+
         return result_ok;
 
     });
@@ -631,6 +667,8 @@ int RikerIO::Data::remove(const RikerIO::Profile& profile, const std::string& id
     if (unlink(dp_file.c_str()) == -1) {
         return RikerIO::result_error;
     };
+
+    _update_last_changed(profile);
 
     return RikerIO::result_ok;
 
@@ -702,6 +740,8 @@ int RikerIO::Link::set(const RikerIO::Profile& profile, const std::string& link_
 
         _write_links(fd, data_points);
 
+        _update_last_changed(profile);
+
         return RikerIO::result_ok;
 
     });
@@ -730,6 +770,8 @@ int RikerIO::Link::remove(const RikerIO::Profile& profile, const std::string& li
 
         _write_links(fd, data_points);
 
+        _update_last_changed(profile);
+
         return RikerIO::result_ok;
 
     });
@@ -743,6 +785,8 @@ int RikerIO::Link::remove(const RikerIO::Profile& profile, const std::string& ke
     if (unlink(link_file.c_str()) == -1) {
         return RikerIO::result_error;
     };
+
+    _update_last_changed(profile);
 
     return RikerIO::result_ok;
 

@@ -52,6 +52,7 @@ static struct runtime_st {
         char folder[255];
         char pFolder[255];
         char info_file[255];
+        char change_file[255];
 
         struct {
             char folder[255];
@@ -198,6 +199,7 @@ static int parseArguments(int argc, char* argv[]) {
             sprintf(runtime.profile.links.folder, "%s/%s", runtime.profile.pFolder, "links");
             sprintf(runtime.profile.links.link, "%s/%s", runtime.profile.folder, "links");
             sprintf(runtime.profile.info_file, "%s/%s", runtime.profile.folder, "info");
+            sprintf(runtime.profile.change_file, "%s/%s", runtime.profile.folder, "last");
             sprintf(runtime.profile.shm.file, "%s/%s", runtime.profile.folder, "shm");
             sprintf(runtime.profile.data.folder, "%s/%s", runtime.profile.folder, "data");
             sprintf(runtime.profile.alloc.file, "%s/%s", runtime.profile.folder, "alloc");
@@ -317,6 +319,7 @@ void tearDown(int exitCode) {
     munmap(runtime.profile.shm.ptr, runtime.profile.shm.size);
 
     unlink(runtime.profile.info_file);
+    unlink(runtime.profile.change_file);
     unlink(runtime.profile.shm.file);
     unlink(runtime.profile.alloc.file);
     unlink(runtime.profile.links.link);
@@ -373,6 +376,7 @@ int main(int argc, char** argv) {
     checkAndCreateFolder(runtime.profile.folder);
     checkAndCreateFolder(runtime.profile.data.folder);
     checkAndCreateFile(runtime.profile.info_file, 1);
+    checkAndCreateFile(runtime.profile.change_file, 0);
     checkAndCreateFile(runtime.profile.alloc.file, 1);
 
     checkAndCreateFolder(runtime.pFolder);
@@ -423,6 +427,11 @@ int main(int argc, char** argv) {
     if (applyGroupAndRights(runtime.profile.info_file, runtime.fileMode) != 1) {
         tearDown(EXIT_FAILURE);
     }
+
+    if (applyGroupAndRights(runtime.profile.change_file, runtime.fileMode) != 1) {
+        tearDown(EXIT_FAILURE);
+    }
+
 
 
 
