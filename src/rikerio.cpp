@@ -237,9 +237,11 @@ void _update_last_changed(const RikerIO::Profile& profile) {
 
     const std::string filepath = root_path + "/" + std::string(profile.id) + "/" + last_changed_filename;
 
-    std::filesystem::path p(filepath);
-
-    std::filesystem::last_write_time(p, std::filesystem::file_time_type::clock::now());
+    _rio_lock_and_handle(filepath, O_WRONLY, [&](int fd) {
+        uint8_t tmp = 1;
+        write(fd, &tmp, sizeof(tmp));
+        return RikerIO::result_ok;
+    });
 
 }
 
