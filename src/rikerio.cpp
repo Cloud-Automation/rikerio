@@ -373,12 +373,19 @@ int RikerIO::unlock(const RikerIO::Profile& profile) {
 
 }
 
-std::filesystem::file_time_type RikerIO::last_write(const Profile& profile) {
+int RikerIO::last_write(const Profile& profile, std::filesystem::file_time_type& timestamp) {
 
-    const std::string last_change_file = root_path + "/" + std::string(profile.id) + "/" + last_change_file;
-    const std::filesystem::path p(last_change_file);
+    try {
+        const std::string last_change_file = root_path + "/" + std::string(profile.id) + "/" + last_change_file;
+        const std::filesystem::path p(last_change_file);
 
-    return std::filesystem::last_write_time(p);
+        timestamp = std::filesystem::last_write_time(p);
+
+    } catch (...) {
+        return RikerIO::result_error;
+    }
+
+    return RikerIO::result_ok;
 
 }
 

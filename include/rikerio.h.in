@@ -156,7 +156,7 @@ int unlock(const Profile&);
 /**
  * @brief get last time something happend in this profile
  */
-std::filesystem::file_time_type last_write(const Profile&);
+int last_write(const Profile&, std::filesystem::file_time_type&);
 
 namespace Data {
 
