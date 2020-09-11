@@ -158,7 +158,7 @@ int _rio_lock_and_handle(const std::string& filename, int flags, std::function<i
     auto user_id = getuid();
 
     chown(filename.c_str(), user_id, group_id->gr_gid);
-    chmod(filename.c_str(), S_IRWXU | S_IRWXG);
+    chmod(filename.c_str(), S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
 
     if (flock(fd, LOCK_UN) == -1) {
 //        error_code = RIO_ERROR_FILE_UNLOCK;
