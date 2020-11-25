@@ -198,7 +198,7 @@ int list(const RikerIO::Profile&, std::vector<std::string>&);
 
 namespace Link {
 /**
- * @brief create alias.
+ * @brief create link.
  * @param rio_profile_t profile
  * @param rio_alias_t alias
  * @param rio_link_t link
