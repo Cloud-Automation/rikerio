@@ -5,9 +5,9 @@ cc = meson.get_compiler('cpp')
 add_project_link_arguments(['-lstdc++fs'], language : 'cpp')
 
 version_conf_data = configuration_data()
-version_conf_data.set('VERSION_MAJOR', '2')
-version_conf_data.set('VERSION_MINOR', '3')
-version_conf_data.set('VERSION_PATCH', '0')
+version_conf_data.set('VERSION_MAJOR', '3')
+version_conf_data.set('VERSION_MINOR', '0')
+version_conf_data.set('VERSION_PATCH', '2')
 configure_file(input : 'include/version.h.in',
                output : 'version.h',
                configuration : version_conf_data)
@@ -15,6 +15,7 @@ configure_file(input : 'include/version.h.in',
 rikerio_conf_data = configuration_data()
 rikerio_conf_data.set('VERSION_MAJOR', '3')
 rikerio_conf_data.set('VERSION_MINOR', '0')
+rikerio_conf_data.set('VERSION_PATCH', '2')
 configure_file(input : 'include/rikerio.h.in',
                output : 'rikerio.h',
                configuration : rikerio_conf_data)

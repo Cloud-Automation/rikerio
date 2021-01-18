@@ -10,6 +10,7 @@
 
 #define RIO_VERSION_MAJOR @VERSION_MAJOR@
 #define RIO_VERSION_MINOR @VERSION_MINOR@
+#define RIO_VERSION_PATCH @VERSION_PATCH@
 
 #define PACKED __attribute__((__packed__))
 

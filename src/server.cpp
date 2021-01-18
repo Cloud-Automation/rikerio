@@ -490,6 +490,30 @@ int main(int argc, char** argv) {
 
     systemd_notify("READY=1");
 
+    /* setup rikerios own memory area */
+
+    uint16_t version_major = RIO_VERSION_MAJOR;
+    uint16_t version_minor = RIO_VERSION_MINOR;
+    uint16_t version_patch = RIO_VERSION_PATCH;
+
+    RikerIO::Allocation rio_alloc;
+    RikerIO::DataPoint dp_version_major = {};
+    RikerIO::DataPoint dp_version_minor = {};
+    RikerIO::DataPoint dp_version_patch = {};
+
+    RikerIO::init(runtime.id, profile);
+    RikerIO::alloc(profile, 6, "rikerio-server", rio_alloc);
+
+    RikerIO::Data::set(profile, rio_alloc, "rikerio.version.major", dp_version_major);
+    RikerIO::Data::set(profile, rio_alloc, "rikerio.version.minor", dp_version_minor);
+    RikerIO::Data::set(profile, rio_alloc, "rikerio.version.patch", dp_version_patch);
+
+    memcpy(rio_alloc.ptr, &version_major, sizeof(uint16_t));
+    memcpy(rio_alloc.ptr + 2, &version_minor, sizeof(uint16_t));
+    memcpy(rio_alloc.ptr + 4, &version_patch, sizeof(uint16_t));
+
+
+
     runtime.running = 1;
 
     while (runtime.running) sleep(1);
