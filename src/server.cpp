@@ -497,9 +497,9 @@ int main(int argc, char** argv) {
     uint16_t version_patch = RIO_VERSION_PATCH;
 
     RikerIO::Allocation rio_alloc;
-    RikerIO::DataPoint dp_version_major = {};
-    RikerIO::DataPoint dp_version_minor = {};
-    RikerIO::DataPoint dp_version_patch = {};
+    RikerIO::DataPoint dp_version_major(RikerIO::Type::UINT16, 2);
+    RikerIO::DataPoint dp_version_minor(RikerIO::Type::UINT16, 2);
+    RikerIO::DataPoint dp_version_patch(RikerIO::Type::UINT16, 2);
 
     RikerIO::init(runtime.id, profile);
     RikerIO::alloc(profile, 6, "rikerio-server", rio_alloc);
