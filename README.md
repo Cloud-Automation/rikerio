@@ -22,5 +22,10 @@ Best way is to start this as the root user.
 rio-server --id=default --size=4096
 ```
 
+## Build Debian package
+
+A debian folder has been created with some valid files. Simply execute dpkg-buildpackage -rfakeroot -us -uc -build=binary and the
+.deb file will be in the .. folder.
+
 ## License
 LGPLv3  

@@ -1,0 +1,11 @@
+Package: rikerio
+Version: 3.0.4-1
+Architecture: amd64
+Maintainer: Stefan Pöter <stefan.poeter@cloud-automation.de>
+Installed-Size: 326
+Depends: libc6 (>= 2.14), libgcc1 (>= 1:3.0), libstdc++6 (>= 5.2)
+Section: database
+Priority: optional
+Homepage: https://github.com/cloud-automation/rikerio
+Description: RikerIO is a framework for connecting IO Data between processes.
+ <insert long description, indented with spaces>

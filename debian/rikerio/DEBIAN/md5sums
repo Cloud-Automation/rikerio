@@ -1,0 +1,8 @@
+62bbcb7973e7943aa3ae2b49cb9c672c  usr/bin/rio-link-add
+4acd23e832df013f5500f7c4051f9058  usr/bin/rio-link-ls
+c64ed1153762d5c2655f2d7218ad17bd  usr/bin/rio-link-rm
+76ab1fa1489e7cc5d8993373fa4964f7  usr/lib/x86_64-linux-gnu/librikerio.so.3.0.0
+7a99052bdc974bff3a47fc20a84b23d7  usr/sbin/rio-server
+9346a4c5c16a0970c7a3ee9723563910  usr/share/doc/rikerio/README.Debian
+d03b8cd273e200c7218f168e2dc31e33  usr/share/doc/rikerio/changelog.Debian.gz
+02a72770074e48101d844d28b35fa757  usr/share/doc/rikerio/copyright

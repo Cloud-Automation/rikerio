@@ -1,0 +1,5 @@
+rikerio (3.0.4-1) unstable; urgency=medium
+
+  * Initial release (Closes: #nnnn)  <nnnn is the bug number of your ITP>
+
+ -- Stefan <stefan@unknown>  Fri, 04 Jun 2021 17:49:29 +0200

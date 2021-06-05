@@ -31,6 +31,7 @@ rikerio_lib_sources = [ 'src/rikerio.cpp' ]
 rikerio_include_directories = include_directories('include', '.')
 
 rikerio_sl = library('rikerio',
+  install: true,
   sources: [ rikerio_lib_sources ],
   include_directories: rikerio_include_directories,
   version: '3.0.0',
@@ -41,23 +42,27 @@ rikerio_dep = declare_dependency(
   link_with : rikerio_sl,
   version : meson.project_version())
 
-
 executable('rio-link-add',
+  install: true,
   sources: [ rikerio_link_add_sources ],
   include_directories: rikerio_include_directories,
   dependencies: [ rikerio_dep ])
 
 executable('rio-link-ls',
+  install: true,
   sources: [ rikerio_link_list_sources ],
   include_directories: rikerio_include_directories,
   dependencies: [ rikerio_dep ])
 
 executable('rio-link-rm',
+  install: true,
   sources: [ rikerio_link_rm_sources ],
   include_directories: rikerio_include_directories,
   dependencies: [ rikerio_dep ])
 
 executable('rio-server',
+  install: true,
+  install_dir: 'sbin',
   sources: [ rikerio_profile_add_sources ],
   include_directories: rikerio_include_directories,
   dependencies: [ rikerio_dep, libdl_dep ])
